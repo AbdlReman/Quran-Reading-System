@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Providers from '@/components/Providers'
+import TrialClassPopup from '@/components/TrialClassPopup'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           {children}
+          <TrialClassPopup />
           {/* Floating WhatsApp Button */}
           <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3">
             <a

@@ -43,6 +43,7 @@ const Footer: React.FC = () => {
               <li><Link href="/about">News & Updates</Link></li>
               <li><Link href="/contact">FAQ</Link></li>
               <li><Link href="/courses">Learning Guides</Link></li>
+              <li><Link href="/payment-method">Payment Method</Link></li>
             </ul>
           </div>
           
