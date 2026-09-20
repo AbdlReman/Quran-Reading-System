@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "Ahmed Hassan",
+    "role": "Quran Student",
+    "image": "/images/testi_1_1.png",
+    "rating": 5,
+    "review": "Alhamdulillah, I have completed my Quran memorization at Quran Reading System. The teachers are highly qualified and the learning environment is perfect for spiritual growth. May Allah bless this institute.",
+    "reviews": 28
+  },
+  {
+    "id": 2,
+    "name": "Fatima Al-Zahra",
+    "role": "Tajweed Student",
+    "image": "/images/testi_1_2.png",
+    "rating": 5,
+    "review": "The Tajweed course at Quran Reading System has been transformative. The instructors are patient and knowledgeable, making complex rules easy to understand. I'm grateful for this opportunity.Highly recommended for anyone",
+    "reviews": 35
+  },
+  {
+    "id": 3,
+    "name": "Omar Abdullah",
+    "role": "Islamic Studies Student",
+    "image": "/images/testi_1_3.png",
+    "rating": 5,
+    "review": "Quran Reading System provides excellent Islamic education with modern teaching methods. The community is supportive and the curriculum is comprehensive. Highly recommended for anyone seeking Islamic knowledge.",
+    "reviews": 42
+  }
+]

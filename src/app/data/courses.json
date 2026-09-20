@@ -1,0 +1,250 @@
+{
+  "courses": [
+    {
+      "id": 1,
+      "title": "Quran Memorization (Hifz)",
+      "subtitle": "Complete Quran memorization program with proper Tajweed and understanding",
+      "description": "Embark on a transformative journey of Quran memorization with our comprehensive Hifz program. This course is designed to guide students through the complete memorization of the Holy Quran while ensuring proper pronunciation, Tajweed rules, and deep understanding of the verses. Our systematic approach combines traditional memorization techniques with modern learning methods, making the process both effective and spiritually rewarding. Students will develop a strong connection with the Quran through daily practice, regular assessments, and personalized guidance from experienced teachers.",
+      "image": "/images/resources/service_2_1.jpg",
+      "duration": "2-3 Years",
+      "level": "Beginner to Advanced",
+      "liveClasses": "Yes",
+      "students": 245,
+      "lessons": 1080,
+      "hours": 2160,
+      "rating": 4.8,
+      "reviews": 156,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Complete Quran Memorization",
+        "Tajweed Rules Mastery",
+        "Memorization Techniques",
+        "Regular Assessments",
+        "One-on-One Sessions",
+        "Progress Tracking",
+        "Audio Recordings",
+        "Mobile App Access"
+      ],
+      "requirements": [
+        "Basic Arabic reading skills",
+        "Commitment to daily practice",
+        "Stable internet connection",
+        "Dedicated study time (2-3 hours daily)"
+      ],
+      "outcomes": [
+        "Complete memorization of the Holy Quran",
+        "Mastery of Tajweed rules",
+        "Deep understanding of Quranic verses",
+        "Ability to recite with proper pronunciation",
+        "Enhanced spiritual connection",
+        "Confidence in leading prayers"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Tajweed & Qira'ah",
+      "subtitle": "Master the art of Quran recitation with proper pronunciation and rules",
+      "description": "Master the art of Quran recitation with our comprehensive Tajweed and Qira'ah program. This course focuses on perfecting the pronunciation, articulation, and melodious recitation of the Holy Quran according to established rules and traditions. Students will learn the seven authentic Qira'ah styles, master all Tajweed rules including Noon and Meem rules, elongation rules, and proper articulation points. The course includes extensive practice sessions, audio-visual materials, and individual feedback to ensure students develop beautiful and accurate recitation skills that honor the sacred text.",
+      "image": "/images/resources/service_2_2.jpg",
+      "duration": "6-12 Months",
+      "level": "Intermediate",
+      "liveClasses": "Yes",
+      "students": 189,
+      "lessons": 480,
+      "hours": 720,
+      "rating": 4.7,
+      "reviews": 134,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Tajweed Rules Mastery",
+        "Seven Qira'ah Styles",
+        "Pronunciation Practice",
+        "Audio Training",
+        "Recitation Assessment",
+        "Voice Training",
+        "Historical Context",
+        "Practical Application"
+      ],
+      "requirements": [
+        "Basic Quran reading ability",
+        "Understanding of Arabic letters",
+        "Commitment to practice",
+        "Audio recording device"
+      ],
+      "outcomes": [
+        "Perfect Tajweed application",
+        "Beautiful Quran recitation",
+        "Understanding of Qira'ah styles",
+        "Confidence in public recitation",
+        "Enhanced spiritual experience",
+        "Ability to teach others"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Islamic Studies",
+      "subtitle": "Comprehensive Islamic education covering Fiqh, Hadith, and Islamic history",
+      "description": "Dive deep into the comprehensive world of Islamic knowledge with our Islamic Studies program. This course covers essential aspects of Islamic jurisprudence (Fiqh), Hadith studies, Islamic history, and contemporary Islamic issues. Students will explore the development of Islamic law, study authentic Hadith collections, understand the life of Prophet Muhammad (PBUH), and examine how Islamic principles apply to modern challenges. The curriculum is designed to provide a balanced understanding of both classical Islamic scholarship and contemporary applications, fostering critical thinking and spiritual growth.",
+      "image": "/images/resources/service_2_3.jpg",
+      "duration": "1-2 Years",
+      "level": "All Levels",
+      "liveClasses": "Yes",
+      "students": 312,
+      "lessons": 720,
+      "hours": 1080,
+      "rating": 4.9,
+      "reviews": 203,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Islamic Jurisprudence (Fiqh)",
+        "Hadith Studies",
+        "Islamic History",
+        "Contemporary Issues",
+        "Comparative Religion",
+        "Islamic Philosophy",
+        "Research Methods",
+        "Community Leadership"
+      ],
+      "requirements": [
+        "Basic understanding of Islam",
+        "Critical thinking skills",
+        "Research and writing ability",
+        "Open-minded approach"
+      ],
+      "outcomes": [
+        "Deep understanding of Islamic law",
+        "Knowledge of authentic Hadith",
+        "Understanding of Islamic history",
+        "Ability to address modern issues",
+        "Enhanced critical thinking",
+        "Community leadership skills"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Arabic Language",
+      "subtitle": "Learn Classical Arabic for better understanding of Islamic texts",
+      "description": "Unlock the beauty and depth of Classical Arabic with our comprehensive language program. This course is specifically designed to help students understand Islamic texts, including the Quran, Hadith, and classical Islamic literature. Students will master Arabic grammar, syntax, vocabulary, and writing skills through interactive lessons, reading exercises, and conversation practice. The curriculum emphasizes both classical and modern Arabic, enabling students to read original Islamic texts while also developing practical communication skills. Perfect for those seeking deeper understanding of Islamic literature and culture.",
+      "image": "/images/resources/feature-img2.jpg",
+      "duration": "1 Year",
+      "level": "Beginner to Intermediate",
+      "liveClasses": "Yes",
+      "students": 178,
+      "lessons": 360,
+      "hours": 540,
+      "rating": 4.6,
+      "reviews": 98,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Classical Arabic Grammar",
+        "Islamic Text Analysis",
+        "Writing Skills",
+        "Conversation Practice",
+        "Vocabulary Building",
+        "Reading Comprehension",
+        "Translation Skills",
+        "Cultural Context"
+      ],
+      "requirements": [
+        "No prior Arabic knowledge required",
+        "Commitment to daily practice",
+        "Interest in Islamic culture",
+        "Basic computer skills"
+      ],
+      "outcomes": [
+        "Fluency in Classical Arabic",
+        "Ability to read Islamic texts",
+        "Strong writing skills",
+        "Cultural understanding",
+        "Translation abilities",
+        "Enhanced communication"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Islamic Ethics & Morals",
+      "subtitle": "Study Islamic ethics, character building, and moral values",
+      "description": "Discover the profound wisdom of Islamic ethics and character building in this transformative course. Students will explore the moral teachings of Islam, learn about the noble character traits exemplified by Prophet Muhammad (PBUH), and understand how to apply Islamic ethical principles in daily life. The course covers topics such as honesty, compassion, justice, patience, gratitude, and social responsibility. Through practical examples, case studies, and reflective exercises, students will develop a strong moral compass and learn to navigate life's challenges with Islamic wisdom and grace.",
+      "image": "/images/resources/gallery_1_1.jpg",
+      "duration": "6 Months",
+      "level": "All Levels",
+      "liveClasses": "Yes",
+      "students": 156,
+      "lessons": 180,
+      "hours": 270,
+      "rating": 4.8,
+      "reviews": 87,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Islamic Ethics",
+        "Character Building",
+        "Moral Values",
+        "Practical Application",
+        "Self-Reflection",
+        "Community Service",
+        "Family Values",
+        "Professional Ethics"
+      ],
+      "requirements": [
+        "Open heart and mind",
+        "Willingness to reflect",
+        "Commitment to change",
+        "Basic Islamic knowledge"
+      ],
+      "outcomes": [
+        "Strong moral character",
+        "Ethical decision-making",
+        "Improved relationships",
+        "Community contribution",
+        "Personal growth",
+        "Spiritual development"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Islamic Finance",
+      "subtitle": "Learn about Islamic banking, finance, and economic principles",
+      "description": "Explore the principles and practices of Islamic finance and economics in this comprehensive course. Students will learn about interest-free banking, Islamic investment principles, halal business practices, and the ethical foundations of Islamic economics. The course covers modern applications of Islamic finance including Islamic banking products, Sukuk (Islamic bonds), Islamic insurance (Takaful), and halal investment opportunities. Students will understand how Islamic financial principles promote economic justice, social responsibility, and sustainable development while providing practical knowledge for personal and professional financial decisions.",
+      "image": "/images/resources/gallery_1_2.jpg",
+      "duration": "8 Months",
+      "level": "Intermediate to Advanced",
+      "liveClasses": "Yes",
+      "students": 134,
+      "lessons": 240,
+      "hours": 360,
+      "rating": 4.7,
+      "reviews": 76,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Islamic Banking",
+        "Financial Principles",
+        "Economic Ethics",
+        "Modern Applications",
+        "Investment Strategies",
+        "Risk Management",
+        "Regulatory Framework",
+        "Global Islamic Finance"
+      ],
+      "requirements": [
+        "Basic financial knowledge",
+        "Understanding of Islamic principles",
+        "Interest in economics",
+        "Professional background preferred"
+      ],
+      "outcomes": [
+        "Islamic financial expertise",
+        "Halal investment skills",
+        "Ethical business practices",
+        "Global market understanding",
+        "Professional certification",
+        "Career advancement"
+      ]
+    }
+  ]
+}
