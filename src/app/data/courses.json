@@ -245,6 +245,170 @@
         "Professional certification",
         "Career advancement"
       ]
+    },
+    {
+      "id": 7,
+      "title": "Online Quran",
+      "subtitle": "Learn to read the Holy Quran fluently from the comfort of your home",
+      "description": "Our Online Quran course is designed for students of all ages who want to learn Quran recitation through live, one-on-one online classes. Using interactive video sessions, experienced tutors guide students step by step from letter recognition to fluent, correct recitation with proper Tajweed. Flexible scheduling allows students from anywhere in the world to learn at a pace that suits them, with regular progress tracking and personalized feedback from qualified teachers.",
+      "image": "/images/resources/gallery_1_3.jpg",
+      "duration": "6-12 Months",
+      "level": "Beginner to Intermediate",
+      "liveClasses": "Yes",
+      "students": 210,
+      "lessons": 360,
+      "hours": 540,
+      "rating": 4.8,
+      "reviews": 112,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "One-on-One Live Classes",
+        "Flexible Scheduling",
+        "Qualified Quran Tutors",
+        "Tajweed Fundamentals",
+        "Progress Tracking",
+        "Interactive Learning Tools",
+        "Audio & Video Sessions",
+        "Mobile App Access"
+      ],
+      "requirements": [
+        "No prior experience required",
+        "Stable internet connection",
+        "Computer, tablet, or smartphone",
+        "Consistent daily practice"
+      ],
+      "outcomes": [
+        "Fluent Quran recitation",
+        "Correct pronunciation of Arabic letters",
+        "Foundational Tajweed knowledge",
+        "Confidence reading the Quran independently",
+        "Stronger connection with the Quran",
+        "Readiness for advanced Quranic studies"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Noorani Qaida",
+      "subtitle": "The essential foundation course for learning to read the Quran from scratch",
+      "description": "Noorani Qaida is the perfect starting point for beginners of all ages who have never read the Quran before. This foundational course teaches the Arabic alphabet, correct pronunciation (Makharij), joining of letters, and basic Tajweed rules through simple, step-by-step lessons. With patient, experienced teachers and a proven traditional teaching method, students build a strong reading foundation that prepares them to move confidently into full Quran recitation.",
+      "image": "/images/resources/gallery_1_4.jpg",
+      "duration": "3-6 Months",
+      "level": "Beginner",
+      "liveClasses": "Yes",
+      "students": 268,
+      "lessons": 180,
+      "hours": 270,
+      "rating": 4.9,
+      "reviews": 145,
+      "language": "Arabic & English",
+      "certificate": "Yes",
+      "features": [
+        "Arabic Alphabet Recognition",
+        "Correct Makharij (Pronunciation Points)",
+        "Letter Joining Rules",
+        "Basic Tajweed Introduction",
+        "Step-by-Step Lessons",
+        "Kid-Friendly Teaching Method",
+        "Regular Practice Sessions",
+        "One-on-One Guidance"
+      ],
+      "requirements": [
+        "No prior knowledge required",
+        "Suitable for children and adults",
+        "Stable internet connection",
+        "Willingness to practice daily"
+      ],
+      "outcomes": [
+        "Recognition of all Arabic letters",
+        "Correct pronunciation of Arabic sounds",
+        "Ability to join letters and read words",
+        "Strong foundation for Quran reading",
+        "Readiness to begin Quran recitation",
+        "Improved confidence in reading Arabic"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Urdu Translation",
+      "subtitle": "Understand the meanings of the Holy Quran through Urdu translation and explanation",
+      "description": "This course helps students go beyond recitation to truly understand the message of the Holy Quran through its Urdu translation and tafseer. Verse by verse, students explore the meanings, context, and lessons of the Quran in Urdu, guided by knowledgeable teachers. The course is ideal for Urdu-speaking students who wish to deepen their understanding of the Quran and apply its teachings in daily life.",
+      "image": "/images/resources/gallery_1_5.jpg",
+      "duration": "1 Year",
+      "level": "All Levels",
+      "liveClasses": "Yes",
+      "students": 142,
+      "lessons": 300,
+      "hours": 450,
+      "rating": 4.7,
+      "reviews": 68,
+      "language": "Urdu & Arabic",
+      "certificate": "Yes",
+      "features": [
+        "Verse-by-Verse Urdu Translation",
+        "Simplified Tafseer",
+        "Contextual Explanation",
+        "Thematic Study of Surahs",
+        "Interactive Discussions",
+        "Practical Life Application",
+        "Q&A Sessions",
+        "Progress Assessments"
+      ],
+      "requirements": [
+        "Basic Urdu reading ability",
+        "Interest in understanding the Quran",
+        "Stable internet connection",
+        "Regular class attendance"
+      ],
+      "outcomes": [
+        "Clear understanding of Quranic meanings in Urdu",
+        "Ability to reflect on Quranic teachings",
+        "Stronger spiritual and practical connection to the Quran",
+        "Knowledge of key Quranic themes",
+        "Improved ability to explain verses to others",
+        "Enhanced daily application of Quranic guidance"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "English Translation",
+      "subtitle": "Understand the meanings of the Holy Quran through English translation and explanation",
+      "description": "Designed for English-speaking students, this course provides a clear, verse-by-verse understanding of the Holy Quran through English translation and simplified tafseer. Students explore the meanings, historical context, and practical lessons of each surah, guided by knowledgeable instructors. This course is ideal for those who want to deepen their comprehension of the Quran's message and integrate its teachings into everyday life.",
+      "image": "/images/resources/gallery_1_6.jpg",
+      "duration": "1 Year",
+      "level": "All Levels",
+      "liveClasses": "Yes",
+      "students": 198,
+      "lessons": 300,
+      "hours": 450,
+      "rating": 4.8,
+      "reviews": 91,
+      "language": "English & Arabic",
+      "certificate": "Yes",
+      "features": [
+        "Verse-by-Verse English Translation",
+        "Simplified Tafseer",
+        "Historical & Contextual Background",
+        "Thematic Study of Surahs",
+        "Interactive Discussions",
+        "Practical Life Application",
+        "Q&A Sessions",
+        "Progress Assessments"
+      ],
+      "requirements": [
+        "Basic English reading ability",
+        "Interest in understanding the Quran",
+        "Stable internet connection",
+        "Regular class attendance"
+      ],
+      "outcomes": [
+        "Clear understanding of Quranic meanings in English",
+        "Ability to reflect on Quranic teachings",
+        "Stronger spiritual and practical connection to the Quran",
+        "Knowledge of key Quranic themes",
+        "Improved ability to explain verses to others",
+        "Enhanced daily application of Quranic guidance"
+      ]
     }
   ]
 }

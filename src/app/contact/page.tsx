@@ -212,6 +212,10 @@ export default function ContactPage() {
                       <option value="islamic-studies">Islamic Studies</option>
                       <option value="arabic">Arabic Language</option>
                       <option value="online">Online Learning</option>
+                      <option value="online-quran">Online Quran</option>
+                      <option value="noorani-qaida">Noorani Qaida</option>
+                      <option value="urdu-translation">Urdu Translation</option>
+                      <option value="english-translation">English Translation</option>
                     </select>
                   </div>
                   
