@@ -10,7 +10,10 @@ interface User {
   email: string;
   role: 'student' | 'teacher' | 'admin';
   isActive: boolean;
+  isEmailVerified?: boolean;
   createdAt: string;
+  lastLogin?: string;
+  dateOfBirth?: string;
   enrollments?: Array<{ courseId: number; courseTitle: string; enrolledAt: string }>;
   phone?: string;
   address?: string;
@@ -50,6 +53,7 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -330,102 +334,120 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 <br/>
-                {/* Table Section */}
+                {/* Users Details Table */}
                 <div className="overflow-x-auto">
                   <table className="min-w-full">
                     <thead className="bg-gray-700/30">
                       <tr>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">User</th>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Email</th>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Role</th>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Status</th>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Phone</th>
-                        <th className="px-8 py-6 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Actions</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Name</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Email</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Phone</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Address</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">DOB</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Role</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Status</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Courses</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Joined</th>
+                        <th className="px-4 sm:px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="bg-gray-800 divide-y divide-gray-700/20">
-                      {paginatedUsers.map((user) => (
-                        <tr key={user._id} className="hover:bg-gray-700/20 transition-all duration-200 group">
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <div className="flex items-center space-x-4">
-                              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform duration-200">
-                                <span className="text-lg font-bold text-white">{user.name.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <div>
-                                <div className="text-base font-semibold text-white mb-1">{user.name}</div>
-                                <div className="text-sm text-gray-400 font-mono">ID: {user._id.slice(0,8)}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <div className="text-sm text-gray-200 font-medium">{user.email}</div>
-                          </td>
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <select
-                              value={user.role}
-                              onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                              className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600/50 bg-gray-700/50 text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 hover:bg-gray-700/70"
-                            >
-                              <option value="student">Student</option>
-                              <option value="teacher">Teacher</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          </td>
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${
-                              user.isActive 
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                            }`}>
-                              <div className={`w-2 h-2 rounded-full mr-2 ${
-                                user.isActive ? 'bg-emerald-400' : 'bg-red-400'
-                              }`}></div>
-                              {user.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <div className="text-sm text-gray-200 font-medium">
-                              {user.phone ? (
-                                <span className="flex items-center">
-                                  <svg className="w-4 h-4 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                  </svg>
-                                  {user.phone}
-                                </span>
-                              ) : (
-                                <span className="text-gray-500 italic font-normal">No phone number</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-8 py-8 whitespace-nowrap">
-                            <button
-                              onClick={() => handleToggleUserStatus(user._id, user.isActive)}
-                              className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:scale-105 ${
-                                user.isActive 
-                                  ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:border-red-500/50' 
-                                  : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 hover:border-emerald-500/50'
-                              }`}
-                              title={user.isActive ? 'Deactivate user' : 'Activate user'}
-                            >
-                              {user.isActive ? (
-                                <>
-                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  Activate
-                                </>
-                              )}
-                            </button>
+                      {paginatedUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} className="px-6 py-12 text-center text-gray-400">
+                            No users found.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        paginatedUsers.map((user) => (
+                          <tr key={user._id} className="hover:bg-gray-700/20 transition-all duration-200">
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0">
+                                  <span className="text-sm font-bold text-white">{user.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-white">{user.name}</div>
+                                  <div className="text-xs text-gray-500 font-mono">{user._id.slice(0, 8)}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 sm:px-6 py-4">
+                              <a href={`mailto:${user.email}`} className="text-sm text-emerald-400 hover:underline">
+                                {user.email}
+                              </a>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {user.isEmailVerified ? 'Verified' : 'Unverified'}
+                              </div>
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                              {user.phone ? (
+                                <a href={`tel:${user.phone}`} className="text-emerald-400 hover:underline">{user.phone}</a>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 text-sm text-gray-300 max-w-[160px]">
+                              <span className="line-clamp-2" title={user.address || ''}>
+                                {user.address || <span className="text-gray-500">—</span>}
+                              </span>
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {user.dateOfBirth
+                                ? new Date(user.dateOfBirth).toLocaleDateString()
+                                : <span className="text-gray-500">—</span>}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                              <select
+                                value={user.role}
+                                onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-600/50 bg-gray-700/50 text-gray-200"
+                              >
+                                <option value="student">Student</option>
+                                <option value="teacher">Teacher</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                user.isActive
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              }`}>
+                                {user.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                              {user.enrollments?.length || 0}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedUser(user)}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30"
+                                >
+                                  Details
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserStatus(user._id, user.isActive)}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
+                                    user.isActive
+                                      ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/30'
+                                      : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border-emerald-500/30'
+                                  }`}
+                                >
+                                  {user.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -744,6 +766,77 @@ export default function AdminDashboard() {
             )}
         </div>
       </div>
+
+      {/* User details modal */}
+      {selectedUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-5 border-b border-gray-700 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-white">User Details</h3>
+                <p className="text-sm text-gray-400 mt-0.5">{selectedUser.email}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="px-3 py-1.5 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 text-gray-200"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                ['Full Name', selectedUser.name],
+                ['Email', selectedUser.email],
+                ['Phone', selectedUser.phone || '—'],
+                ['Address', selectedUser.address || '—'],
+                ['Date of Birth', selectedUser.dateOfBirth ? new Date(selectedUser.dateOfBirth).toLocaleDateString() : '—'],
+                ['Role', selectedUser.role],
+                ['Account Status', selectedUser.isActive ? 'Active' : 'Inactive'],
+                ['Email Verified', selectedUser.isEmailVerified ? 'Yes' : 'No'],
+                ['Courses Enrolled', String(selectedUser.enrollments?.length || 0)],
+                ['Joined', new Date(selectedUser.createdAt).toLocaleString()],
+                ['Last Login', selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : '—'],
+                ['User ID', selectedUser._id],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-gray-900/60 border border-gray-700/60 p-4">
+                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">{label}</p>
+                  <p className="text-sm text-white break-words font-medium">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {!!selectedUser.enrollments?.length && (
+              <div className="px-6 pb-6">
+                <h4 className="text-sm font-semibold text-gray-300 mb-3">Enrolled Courses</h4>
+                <div className="space-y-2">
+                  {selectedUser.enrollments.map((course) => (
+                    <div
+                      key={`${course.courseId}-${course.enrolledAt}`}
+                      className="rounded-lg border border-gray-700 bg-gray-900/40 px-4 py-3 flex items-center justify-between gap-3"
+                    >
+                      <div>
+                        <p className="text-sm text-white font-medium">{course.courseTitle}</p>
+                        <p className="text-xs text-gray-500">Course ID: {course.courseId}</p>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {new Date(course.enrolledAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

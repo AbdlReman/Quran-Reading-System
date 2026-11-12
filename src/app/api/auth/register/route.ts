@@ -89,13 +89,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Role validation
+    // Role validation — public signup can only be student or teacher; default is student
+    // Admin role can NEVER be set via registration
     if (role && !['student', 'teacher'].includes(role)) {
       return NextResponse.json(
         { error: 'Invalid role. Only student and teacher roles are allowed for registration' },
         { status: 400 }
       );
     }
+    const safeRole: 'student' | 'teacher' = role === 'teacher' ? 'teacher' : 'student';
 
     // Phone validation (if provided)
     if (phone && !/^[\+]?[1-9][\d]{0,15}$/.test(phone)) {
@@ -145,7 +147,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
-      role: role || 'student',
+      role: safeRole,
       phone: phone?.trim(),
       address: address?.trim(),
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
