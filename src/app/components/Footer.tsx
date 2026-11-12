@@ -1,12 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    };
+  }, []);
+
+  const showMessage = (nextStatus: 'success' | 'error', message: string) => {
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    setStatus(nextStatus);
+    setStatusMessage(message);
+    messageTimerRef.current = setTimeout(() => {
+      setStatus('idle');
+      setStatusMessage('');
+    }, 3000);
+  };
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,12 +45,16 @@ const Footer: React.FC = () => {
         throw new Error(data.error || 'Failed to subscribe');
       }
 
-      setStatus('success');
-      setStatusMessage(data.alreadySubscribed ? 'You are already subscribed.' : 'Thanks for subscribing!');
       setEmail('');
+      showMessage(
+        'success',
+        data.alreadySubscribed ? 'You are already subscribed.' : 'Thanks for subscribing!'
+      );
     } catch (error) {
-      setStatus('error');
-      setStatusMessage(error instanceof Error ? error.message : 'Something went wrong.');
+      showMessage(
+        'error',
+        error instanceof Error ? error.message : 'Something went wrong.'
+      );
     }
   };
 
