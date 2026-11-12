@@ -1,7 +1,42 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 
 const Footer: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setStatus('loading');
+    setStatusMessage('');
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'footer' }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
+
+      setStatus('success');
+      setStatusMessage(data.alreadySubscribed ? 'You are already subscribed.' : 'Thanks for subscribing!');
+      setEmail('');
+    } catch (error) {
+      setStatus('error');
+      setStatusMessage(error instanceof Error ? error.message : 'Something went wrong.');
+    }
+  };
+
   return (
     <footer className="footer">
       <div className="container">
@@ -11,8 +46,8 @@ const Footer: React.FC = () => {
               <span className="text-secondary-600">■</span> Quran Reading System.
             </div>
             <p className="text-gray-300 mb-4">
-              Dedicated to excellence in Quranic education and Islamic studies. 
-              We provide comprehensive learning programs for students of all ages 
+              Dedicated to excellence in Quranic education and Islamic studies.
+              We provide comprehensive learning programs for students of all ages
               in a nurturing spiritual environment.
             </p>
             <ul className="footer-links">
@@ -21,7 +56,7 @@ const Footer: React.FC = () => {
               <li><a href="mailto:info@quranreadingsystem.com">info@quranreadingsystem.com</a></li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="footer-title">About Us</h3>
             <ul className="footer-links">
@@ -33,7 +68,7 @@ const Footer: React.FC = () => {
               <li><Link href="/contact">Contact Us</Link></li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="footer-title">Useful Links</h3>
             <ul className="footer-links">
@@ -46,23 +81,38 @@ const Footer: React.FC = () => {
               <li><Link href="/payment-method">Payment Method</Link></li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="footer-title">Newsletter</h3>
             <p className="text-gray-300 mb-4">
               Get the latest Quran Reading System news and Islamic education updates
             </p>
-            <div className="newsletter-input">
-              <input type="email" placeholder="Enter your email" />
-              <button className="newsletter-btn">
+            <form onSubmit={handleNewsletterSubmit} className="newsletter-input">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={status === 'loading'}
+              />
+              <button type="submit" className="newsletter-btn" disabled={status === 'loading'} aria-label="Subscribe">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M5 12h14M12 5l7 7-7 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
-            </div>
+            </form>
+            {statusMessage && (
+              <p
+                className="mt-2 text-sm"
+                style={{ color: status === 'error' ? '#fca5a5' : '#86efac' }}
+              >
+                {statusMessage}
+              </p>
+            )}
           </div>
         </div>
-        
+
         <div className="footer-bottom">
           <div>© {new Date().getFullYear()} <Link href="/" className="text-white">Quran Reading System.</Link> All Rights Reserved</div>
           <div className="flex items-center gap-4">
@@ -97,5 +147,3 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
-
-

@@ -16,17 +16,40 @@ interface User {
   address?: string;
 }
 
+interface ContactMessageItem {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'read' | 'replied';
+  createdAt: string;
+}
+
+interface NewsletterLeadItem {
+  _id: string;
+  email: string;
+  source: string;
+  status: 'new' | 'contacted';
+  createdAt: string;
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [messages, setMessages] = useState<ContactMessageItem[]>([]);
+  const [leads, setLeads] = useState<NewsletterLeadItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'enrollments'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'enrollments' | 'messages' | 'leads'>('users');
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -37,6 +60,8 @@ export default function AdminDashboard() {
     }
 
     fetchUsers();
+    fetchMessages();
+    fetchLeads();
   }, [session, status, router]);
 
   const fetchUsers = async () => {
@@ -50,6 +75,76 @@ export default function AdminDashboard() {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch('/api/admin/messages', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const fetchLeads = async () => {
+    try {
+      const response = await fetch('/api/admin/leads', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        setLeads(data.leads || []);
+      }
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    }
+  };
+
+  const updateMessageStatus = async (id: string, nextStatus: ContactMessageItem['status']) => {
+    try {
+      const response = await fetch('/api/admin/messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      if (response.ok) fetchMessages();
+    } catch (error) {
+      console.error('Error updating message:', error);
+    }
+  };
+
+  const deleteMessage = async (id: string) => {
+    if (!confirm('Delete this message?')) return;
+    try {
+      const response = await fetch(`/api/admin/messages?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchMessages();
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
+
+  const updateLeadStatus = async (id: string, nextStatus: NewsletterLeadItem['status']) => {
+    try {
+      const response = await fetch('/api/admin/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      if (response.ok) fetchLeads();
+    } catch (error) {
+      console.error('Error updating lead:', error);
+    }
+  };
+
+  const deleteLead = async (id: string) => {
+    if (!confirm('Delete this lead?')) return;
+    try {
+      const response = await fetch(`/api/admin/leads?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchLeads();
+    } catch (error) {
+      console.error('Error deleting lead:', error);
     }
   };
 
@@ -143,27 +238,25 @@ export default function AdminDashboard() {
               <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
-                <button 
-                  onClick={() => setActiveTab('users')} 
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    activeTab === 'users' 
-                      ? 'bg-emerald-600 text-white shadow-lg' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  Users
-                </button>
-                <button 
-                  onClick={() => setActiveTab('enrollments')} 
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    activeTab === 'enrollments' 
-                      ? 'bg-emerald-600 text-white shadow-lg' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  Enrollments
-                </button>
+              <div className="flex flex-wrap bg-gray-800 rounded-lg p-1 border border-gray-700 gap-1">
+                {([
+                  ['users', 'Users'],
+                  ['enrollments', 'Enrollments'],
+                  ['messages', `Messages${messages.filter((m) => m.status === 'new').length ? ` (${messages.filter((m) => m.status === 'new').length})` : ''}`],
+                  ['leads', `Leads${leads.filter((l) => l.status === 'new').length ? ` (${leads.filter((l) => l.status === 'new').length})` : ''}`],
+                ] as const).map(([tab, label]) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      activeTab === tab
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               <button
                 onClick={() => signOut()}
@@ -393,6 +486,158 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Messages View */}
+            {activeTab === 'messages' && (
+              <div className="bg-gray-800 rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+                <div className="px-6 sm:px-8 py-6 border-b border-gray-700/30">
+                  <h2 className="text-2xl font-bold text-white mb-1">Contact Messages</h2>
+                  <p className="text-gray-400 text-sm">
+                    {messages.length} total · {messages.filter((m) => m.status === 'new').length} new
+                  </p>
+                </div>
+                <div className="divide-y divide-gray-700/30">
+                  {messages.length === 0 ? (
+                    <div className="px-8 py-16 text-center text-gray-400">No contact messages yet.</div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div key={msg._id} className="px-6 sm:px-8 py-5 hover:bg-gray-700/20 transition-colors">
+                        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                msg.status === 'new'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : msg.status === 'read'
+                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                  : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                              }`}>
+                                {msg.status}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(msg.createdAt).toLocaleString()}
+                              </span>
+                            </div>
+                            <h3 className="text-lg font-semibold text-white">
+                              {msg.firstName} {msg.lastName}
+                            </h3>
+                            <p className="text-sm text-gray-300 mt-1">
+                              <a href={`mailto:${msg.email}`} className="text-emerald-400 hover:underline">{msg.email}</a>
+                              {msg.phone ? <> · <a href={`tel:${msg.phone}`} className="text-emerald-400 hover:underline">{msg.phone}</a></> : null}
+                            </p>
+                            <p className="text-sm text-gray-400 mt-2">
+                              <span className="font-medium text-gray-300">Subject:</span> {msg.subject}
+                            </p>
+                            <p className={`text-sm text-gray-300 mt-2 whitespace-pre-wrap ${expandedMessageId === msg._id ? '' : 'line-clamp-2'}`}>
+                              {msg.message}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandedMessageId(expandedMessageId === msg._id ? null : msg._id);
+                                if (msg.status === 'new') updateMessageStatus(msg._id, 'read');
+                              }}
+                              className="mt-2 text-xs text-emerald-400 hover:text-emerald-300"
+                            >
+                              {expandedMessageId === msg._id ? 'Show less' : 'Read full message'}
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-2 shrink-0">
+                            <select
+                              value={msg.status}
+                              onChange={(e) => updateMessageStatus(msg._id, e.target.value as ContactMessageItem['status'])}
+                              className="px-3 py-2 rounded-lg text-sm bg-gray-700/50 border border-gray-600/50 text-gray-200"
+                            >
+                              <option value="new">New</option>
+                              <option value="read">Read</option>
+                              <option value="replied">Replied</option>
+                            </select>
+                            <a
+                              href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
+                              className="px-3 py-2 rounded-lg text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                            >
+                              Reply
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => deleteMessage(msg._id)}
+                              className="px-3 py-2 rounded-lg text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Leads View */}
+            {activeTab === 'leads' && (
+              <div className="bg-gray-800 rounded-2xl border border-gray-700/50 overflow-hidden shadow-2xl">
+                <div className="px-6 sm:px-8 py-6 border-b border-gray-700/30">
+                  <h2 className="text-2xl font-bold text-white mb-1">Newsletter Leads</h2>
+                  <p className="text-gray-400 text-sm">
+                    {leads.length} total · {leads.filter((l) => l.status === 'new').length} new from footer
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-700/30">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Source</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-200 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700/20">
+                      {leads.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-gray-400">No newsletter leads yet.</td>
+                        </tr>
+                      ) : (
+                        leads.map((lead) => (
+                          <tr key={lead._id} className="hover:bg-gray-700/20">
+                            <td className="px-6 py-4">
+                              <a href={`mailto:${lead.email}`} className="text-emerald-400 hover:underline font-medium">
+                                {lead.email}
+                              </a>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-300 capitalize">{lead.source}</td>
+                            <td className="px-6 py-4">
+                              <select
+                                value={lead.status}
+                                onChange={(e) => updateLeadStatus(lead._id, e.target.value as NewsletterLeadItem['status'])}
+                                className="px-3 py-2 rounded-lg text-sm bg-gray-700/50 border border-gray-600/50 text-gray-200"
+                              >
+                                <option value="new">New</option>
+                                <option value="contacted">Contacted</option>
+                              </select>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-400">
+                              {new Date(lead.createdAt).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4">
+                              <button
+                                type="button"
+                                onClick={() => deleteLead(lead._id)}
+                                className="px-3 py-2 rounded-lg text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
