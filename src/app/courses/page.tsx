@@ -9,23 +9,44 @@ export default function CoursesPage() {
 
   const categories = [
     {
-      icon: "📖",
       title: "Quran Studies",
       count: "3 Courses",
-      description: "Memorization, recitation, and understanding"
+      description: "Memorization, recitation, and understanding of the Holy Quran",
+      topics: ["Hifz", "Tajweed", "Tafsir"],
+      accent: "#12433f",
+      soft: "rgba(18, 67, 63, 0.08)",
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
     },
     {
-      icon: "🕌",
       title: "Islamic Studies",
       count: "2 Courses",
-      description: "Jurisprudence, history, and ethics"
+      description: "Jurisprudence, history, and ethics rooted in authentic scholarship",
+      topics: ["Fiqh", "Hadith", "Seerah"],
+      accent: "#ae9143",
+      soft: "rgba(174, 145, 67, 0.12)",
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6" />
+        </svg>
+      ),
     },
     {
-      icon: "📝",
       title: "Arabic Language",
       count: "1 Course",
-      description: "Classical Arabic and grammar"
-    }
+      description: "Classical Arabic grammar and vocabulary for deeper Quran understanding",
+      topics: ["Grammar", "Vocabulary", "Reading"],
+      accent: "#1a5c55",
+      soft: "rgba(26, 92, 85, 0.1)",
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        </svg>
+      ),
+    },
   ];
 
   const benefits = [
@@ -73,35 +94,150 @@ export default function CoursesPage() {
         </section>
 
         {/* Course Categories */}
-        <section className="py-20 bg-white">
+        <section className="py-16 sm:py-20 bg-white">
           <div className="container">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12 sm:mb-16">
+              <p
+                className="inline-block text-xs sm:text-sm font-semibold tracking-wide uppercase mb-3 px-3 py-1 rounded-full"
+                style={{ background: 'rgba(18, 67, 63, 0.08)', color: 'var(--primary-color)' }}
+              >
+                Browse by Path
+              </p>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Course Categories</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+              <p className="text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
                 Explore our diverse range of Islamic education programs
               </p>
-              <div className="mt-6 flex justify-center">
-                <div className="w-16 h-1 bg-emerald-600 rounded-full"></div>
-              </div>
             </div>
-            
-            <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
-              {categories.map((category, index) => (
-                <div key={index} className="group flex-1">
-                  <div className="text-center p-8 bg-white rounded-2xl border-2 border-emerald-100 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-3 hover:border-emerald-300 h-full">
-                    <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                      {category.icon}
+
+            <div className="course-categories max-w-6xl mx-auto">
+              {categories.map((category) => (
+                <article
+                  key={category.title}
+                  className="course-category group"
+                  style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: '1rem',
+                    background: '#fff',
+                    border: '1px solid #eef0f2',
+                    boxShadow: '0 1px 3px rgba(18, 67, 63, 0.06)',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      insetInline: 0,
+                      top: 0,
+                      height: '5px',
+                      background: category.accent,
+                    }}
+                  />
+
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      right: '-2rem',
+                      top: '-2rem',
+                      width: '8rem',
+                      height: '8rem',
+                      borderRadius: '9999px',
+                      background: category.soft,
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  <div style={{ padding: '1.75rem', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem' }}>
+                      <div
+                        style={{
+                          width: '3.5rem',
+                          height: '3.5rem',
+                          borderRadius: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: category.soft,
+                          color: category.accent,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {category.icon}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          padding: '0.35rem 0.65rem',
+                          borderRadius: '0.5rem',
+                          background: category.soft,
+                          color: category.accent,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {category.count}
+                      </span>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-3">{category.title}</h3>
-                    <p className="text-emerald-600 font-semibold mb-4 text-lg">{category.count}</p>
-                    <p className="text-gray-600 leading-relaxed text-base">
+
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#1f2937', marginBottom: '0.5rem' }}>
+                      {category.title}
+                    </h3>
+                    <p style={{ color: '#6b7280', lineHeight: 1.65, fontSize: '0.95rem', marginBottom: '1.25rem', flex: 1 }}>
                       {category.description}
                     </p>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        paddingTop: '1rem',
+                        borderTop: '1px solid #f0f1f3',
+                      }}
+                    >
+                      {category.topics.map((topic) => (
+                        <span
+                          key={topic}
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: category.accent,
+                            background: category.soft,
+                            padding: '0.3rem 0.65rem',
+                            borderRadius: '0.4rem',
+                          }}
+                        >
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
+
+          <style>{`
+            .course-categories {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: 1.25rem;
+            }
+            .course-category:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 12px 28px rgba(18, 67, 63, 0.12) !important;
+            }
+            @media (min-width: 768px) {
+              .course-categories {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 1.5rem;
+              }
+            }
+          `}</style>
         </section>
 
         {/* All Available Courses */}
