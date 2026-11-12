@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import dbConnect from '@/lib/mongodb';
 import ContactMessage from '@/models/ContactMessage';
+import { isEmailConfigured, sendAppMail } from '@/lib/mailer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,21 +29,11 @@ export async function POST(request: NextRequest) {
       status: 'new',
     });
 
-    // Best-effort email notify (do not fail the request if email is misconfigured)
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.EMAIL_TO) {
+    if (isEmailConfigured()) {
       try {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-          },
-        });
-
-        await transporter.sendMail({
-          from: `"Quran Reading System Contact Form" <${process.env.EMAIL_USER}>`,
+        await sendAppMail({
           replyTo: email,
-          to: process.env.EMAIL_TO,
+          label: 'Contact',
           subject: `New Contact Form Submission: ${subject}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
