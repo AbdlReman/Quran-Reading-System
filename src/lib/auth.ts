@@ -90,9 +90,9 @@ export const authOptions: any = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
     error: '/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  // Required on Vercel — set NEXTAUTH_SECRET in Project → Settings → Environment Variables
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 };

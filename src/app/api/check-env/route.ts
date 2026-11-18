@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const requiredEnvVars = {
     MONGODB_URI: process.env.MONGODB_URI,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   };
 
@@ -24,9 +24,13 @@ export async function GET() {
           MONGODB_URI: requiredEnvVars.MONGODB_URI ? 'Set' : 'Missing',
           NEXTAUTH_SECRET: requiredEnvVars.NEXTAUTH_SECRET ? 'Set' : 'Missing',
           NEXTAUTH_URL: requiredEnvVars.NEXTAUTH_URL ? 'Set' : 'Missing',
-        }
+          NEXTAUTH_URL_VALUE: requiredEnvVars.NEXTAUTH_URL || null,
+        },
+        hint: missingVars.includes('NEXTAUTH_SECRET')
+          ? 'Add NEXTAUTH_SECRET in Vercel → Settings → Environment Variables, then Redeploy.'
+          : undefined,
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     },
     { status: hasAllVars ? 200 : 500 }
   );
