@@ -29,6 +29,26 @@ const COUNTRIES = [
   'Germany', 'France', 'Other',
 ];
 
+const fieldCss: React.CSSProperties = {
+  width: '100%',
+  height: '2.85rem',
+  padding: '0 0.95rem',
+  borderRadius: '0.75rem',
+  border: '1px solid #d7e0de',
+  background: '#f7faf9',
+  color: '#1f2937',
+  fontSize: '0.9rem',
+  outline: 'none',
+};
+
+const labelCss: React.CSSProperties = {
+  display: 'block',
+  marginBottom: '0.4rem',
+  fontSize: '0.82rem',
+  fontWeight: 650,
+  color: '#334155',
+};
+
 export default function EnrollButton({
   courseId,
   courseTitle = '',
@@ -38,6 +58,7 @@ export default function EnrollButton({
   const { data: session, status } = useSession();
   const router = useRouter();
   const titleId = useId();
+  const isLoggedIn = status === 'authenticated' && Boolean(session?.user);
 
   const [loading, setLoading] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
@@ -45,10 +66,13 @@ export default function EnrollButton({
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
     age: '',
     education: EDUCATION_OPTIONS[0],
-    phone: '',
     country: 'Pakistan',
     notes: '',
   });
@@ -92,10 +116,6 @@ export default function EnrollButton({
 
   const openForm = () => {
     if (status === 'loading') return;
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
     setErrorMessage('');
     setIsOpen(true);
     requestAnimationFrame(() => setIsVisible(true));
@@ -113,9 +133,31 @@ export default function EnrollButton({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const getFieldStyle = (name: string): React.CSSProperties => ({
+    ...fieldCss,
+    border: focusedField === name ? '1px solid #12433f' : '1px solid #d7e0de',
+    boxShadow: focusedField === name ? '0 0 0 3px rgba(18,67,63,0.12)' : 'none',
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const ageNum = Number(formData.age);
+
+    if (!isLoggedIn) {
+      if (!formData.name.trim() || formData.name.trim().length < 2) {
+        setErrorMessage('Please enter your full name.');
+        return;
+      }
+      if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        setErrorMessage('Please enter a valid email address.');
+        return;
+      }
+      if (!formData.phone.trim() || formData.phone.replace(/[^\d]/g, '').length < 7) {
+        setErrorMessage('Please enter a valid phone number.');
+        return;
+      }
+    }
+
     if (!formData.age || Number.isNaN(ageNum) || ageNum < 3 || ageNum > 100) {
       setErrorMessage('Please enter a valid age (3–100).');
       return;
@@ -130,21 +172,29 @@ export default function EnrollButton({
     setMessage('');
 
     try {
-      const res = await fetch('/api/users/enroll', {
+      const payload: Record<string, string | number> = {
+        courseId,
+        age: ageNum,
+        education: formData.education.trim(),
+        country: formData.country.trim(),
+        notes: formData.notes.trim(),
+      };
+
+      if (!isLoggedIn) {
+        payload.name = formData.name.trim();
+        payload.email = formData.email.trim();
+        payload.phone = formData.phone.trim();
+      }
+
+      const res = await fetch('/api/course-enroll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          courseId,
-          age: ageNum,
-          education: formData.education.trim(),
-          phone: formData.phone.trim(),
-          country: formData.country.trim(),
-          notes: formData.notes.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
+
       if (res.ok) {
-        setEnrolled(true);
+        if (isLoggedIn) setEnrolled(true);
         setMessage(data.message || 'Enrolled successfully');
         handleClose();
         router.push(`/payment-method?course=${encodeURIComponent(courseTitle || String(courseId))}`);
@@ -187,7 +237,7 @@ export default function EnrollButton({
           className="fixed inset-0 z-[80] flex items-center justify-center p-4"
           style={{
             background: isVisible ? 'rgba(8, 18, 16, 0.72)' : 'rgba(8, 18, 16, 0)',
-            backdropFilter: 'blur(6px)',
+            backdropFilter: 'blur(7px)',
             transition: 'background 220ms ease',
           }}
           onClick={handleClose}
@@ -197,30 +247,40 @@ export default function EnrollButton({
             aria-modal="true"
             aria-labelledby={titleId}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#d7e0de] bg-white shadow-2xl"
+            className="w-full max-w-[34rem] overflow-hidden rounded-[1.35rem] border border-[#d7e0de] bg-white shadow-2xl"
             style={{
-              transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
+              transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(14px) scale(0.98)',
               opacity: isVisible ? 1 : 0,
               transition: 'transform 220ms ease, opacity 220ms ease',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <div className="bg-[#12433f] px-5 py-5 text-white sm:px-6">
-              <div className="flex items-start justify-between gap-3">
+            <div
+              className="relative overflow-hidden px-5 py-5 text-white sm:px-6"
+              style={{ background: 'linear-gradient(135deg, #12433f 0%, #1a5c55 100%)' }}
+            >
+              <div
+                className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full"
+                style={{ background: 'rgba(174,145,67,0.18)' }}
+              />
+              <div className="relative flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-200/80">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f0d78c]">
                     Course Enrollment
                   </p>
                   <h3 id={titleId} className="mt-1 text-xl font-bold sm:text-2xl">
                     Student Details
                   </h3>
                   <p className="mt-1 text-sm text-white/70">
-                    {courseTitle || 'Complete the form to continue to payment'}
+                    {courseTitle || 'Complete details to continue enrollment'}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-sm hover:bg-white/15"
+                  className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-1.5 text-sm hover:bg-white/15"
                   aria-label="Close"
                 >
                   ✕
@@ -228,10 +288,83 @@ export default function EnrollButton({
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6"
+            >
+              {isLoggedIn ? (
+                <div
+                  className="rounded-2xl border px-4 py-3"
+                  style={{ borderColor: '#d7e0de', background: '#f3f8f6' }}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[#12433f]/70">
+                    Signed in as
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-slate-800">
+                    {session?.user?.name || 'Student'}
+                  </p>
+                  <p className="text-sm text-slate-500">{session?.user?.email}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Name, email & phone will be taken from your account.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800">
+                    Not logged in — please share your contact details so we can confirm enrollment.
+                  </div>
+
+                  <label className="block">
+                    <span style={labelCss}>Full name *</span>
+                    <input
+                      type="text"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('name')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="Your full name"
+                      style={getFieldStyle('name')}
+                    />
+                  </label>
+
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                    <label className="block">
+                      <span style={labelCss}>Email *</span>
+                      <input
+                        type="email"
+                        name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('email')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="you@email.com"
+                        style={getFieldStyle('email')}
+                      />
+                    </label>
+                    <label className="block">
+                      <span style={labelCss}>Phone number *</span>
+                      <input
+                        type="tel"
+                        name="phone"
+                        required
+                        value={formData.phone}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('phone')}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="+92 300 1234567"
+                        style={getFieldStyle('phone')}
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-gray-700">Age *</span>
+                  <span style={labelCss}>Age *</span>
                   <input
                     type="number"
                     name="age"
@@ -240,19 +373,22 @@ export default function EnrollButton({
                     required
                     value={formData.age}
                     onChange={handleChange}
+                    onFocus={() => setFocusedField('age')}
+                    onBlur={() => setFocusedField(null)}
                     placeholder="e.g. 16"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7faf9] px-3.5 py-2.5 text-sm text-gray-800 outline-none focus:border-[#12433f]"
+                    style={getFieldStyle('age')}
                   />
                 </label>
-
                 <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-gray-700">Education *</span>
+                  <span style={labelCss}>Education *</span>
                   <select
                     name="education"
                     required
                     value={formData.education}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7faf9] px-3.5 py-2.5 text-sm text-gray-800 outline-none focus:border-[#12433f]"
+                    onFocus={() => setFocusedField('education')}
+                    onBlur={() => setFocusedField(null)}
+                    style={getFieldStyle('education')}
                   >
                     {EDUCATION_OPTIONS.map((opt) => (
                       <option key={opt} value={opt}>
@@ -263,47 +399,41 @@ export default function EnrollButton({
                 </label>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-gray-700">Phone</span>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+92 300 1234567"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7faf9] px-3.5 py-2.5 text-sm text-gray-800 outline-none focus:border-[#12433f]"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-sm font-semibold text-gray-700">Country</span>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7faf9] px-3.5 py-2.5 text-sm text-gray-800 outline-none focus:border-[#12433f]"
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+              <label className="block">
+                <span style={labelCss}>Country</span>
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('country')}
+                  onBlur={() => setFocusedField(null)}
+                  style={getFieldStyle('country')}
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Notes / preferred time
-                </span>
+                <span style={labelCss}>Notes / preferred time</span>
                 <textarea
                   name="notes"
                   rows={3}
                   value={formData.notes}
                   onChange={handleChange}
+                  onFocus={() => setFocusedField('notes')}
+                  onBlur={() => setFocusedField(null)}
                   placeholder="Any schedule preference or message for our team"
-                  className="w-full resize-none rounded-xl border border-gray-200 bg-[#f7faf9] px-3.5 py-2.5 text-sm text-gray-800 outline-none focus:border-[#12433f]"
+                  style={{
+                    ...getFieldStyle('notes'),
+                    height: 'auto',
+                    paddingTop: '0.75rem',
+                    paddingBottom: '0.75rem',
+                    resize: 'none',
+                  }}
                 />
               </label>
 
@@ -313,7 +443,7 @@ export default function EnrollButton({
                 </p>
               )}
 
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={handleClose}
@@ -324,7 +454,8 @@ export default function EnrollButton({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="rounded-xl bg-[#12433f] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0f3835] disabled:opacity-70"
+                  className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-70"
+                  style={{ background: '#12433f' }}
                 >
                   {loading ? 'Submitting...' : 'Continue to Payment'}
                 </button>

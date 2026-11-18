@@ -59,6 +59,22 @@ interface TrialLeadItem {
   createdAt: string;
 }
 
+interface CourseEnrollmentItem {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  age: number;
+  education: string;
+  country: string;
+  notes: string;
+  courseId: number;
+  courseTitle: string;
+  source: 'guest' | 'logged_in';
+  status: 'new' | 'contacted' | 'confirmed' | 'closed';
+  createdAt: string;
+}
+
 type TabKey = 'overview' | 'messages' | 'leads' | 'trials' | 'users' | 'enrollments';
 
 const BRAND = '#12433f';
@@ -175,6 +191,7 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState<ContactMessageItem[]>([]);
   const [leads, setLeads] = useState<NewsletterLeadItem[]>([]);
   const [trialLeads, setTrialLeads] = useState<TrialLeadItem[]>([]);
+  const [courseEnrollments, setCourseEnrollments] = useState<CourseEnrollmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -210,6 +227,7 @@ export default function AdminDashboard() {
     fetchMessages();
     fetchLeads();
     fetchTrialLeads();
+    fetchCourseEnrollments();
   }, [session, status, router]);
 
   useEffect(() => {
@@ -263,6 +281,44 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching trial leads:', error);
+    }
+  };
+
+  const fetchCourseEnrollments = async () => {
+    try {
+      const response = await fetch('/api/admin/enrollments', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        setCourseEnrollments(data.enrollments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching course enrollments:', error);
+    }
+  };
+
+  const updateEnrollmentStatus = async (
+    id: string,
+    nextStatus: CourseEnrollmentItem['status']
+  ) => {
+    try {
+      const response = await fetch('/api/admin/enrollments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      if (response.ok) fetchCourseEnrollments();
+    } catch (error) {
+      console.error('Error updating enrollment:', error);
+    }
+  };
+
+  const deleteEnrollment = async (id: string) => {
+    if (!confirm('Delete this course enrollment?')) return;
+    try {
+      const response = await fetch(`/api/admin/enrollments?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchCourseEnrollments();
+    } catch (error) {
+      console.error('Error deleting enrollment:', error);
     }
   };
 
@@ -364,7 +420,11 @@ export default function AdminDashboard() {
   const unreadCount = messages.filter((m) => m.status === 'new').length;
   const newLeadsCount = leads.filter((l) => l.status === 'new').length;
   const newTrialCount = trialLeads.filter((t) => t.status === 'new').length;
-  const totalEnrollments = users.reduce((sum, u) => sum + (u.enrollments?.length || 0), 0);
+  const totalEnrollments = Math.max(
+    courseEnrollments.length,
+    users.reduce((sum, u) => sum + (u.enrollments?.length || 0), 0)
+  );
+  const newEnrollmentCount = courseEnrollments.filter((e) => e.status === 'new').length;
   const repliedCount = messages.filter((m) => m.status === 'replied').length;
   const readCount = messages.filter((m) => m.status === 'read').length;
 
@@ -512,7 +572,7 @@ export default function AdminDashboard() {
     { key: 'leads', label: 'Newsletter', badge: newLeadsCount },
     { key: 'trials', label: 'Free Trial', badge: newTrialCount },
     { key: 'users', label: 'Users' },
-    { key: 'enrollments', label: 'Enrollments' },
+    { key: 'enrollments', label: 'Enrollments', badge: newEnrollmentCount },
   ];
 
   const navIcons: Record<TabKey, React.ReactNode> = {
@@ -1386,47 +1446,26 @@ export default function AdminDashboard() {
             <section className={`${cardClass} overflow-hidden`}>
               <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
                 <h3 className="text-xl font-bold text-slate-800">Enroll Courses</h3>
-                <p className="mt-1 text-sm text-slate-500">Student enrollment form details by course</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {courseEnrollments.length} total · {newEnrollmentCount} new · form submissions
+                </p>
               </div>
               <div className="space-y-5 p-5 sm:p-6">
                 {(() => {
-                  type EnrollmentStudent = {
-                    _id: string;
-                    name: string;
-                    email: string;
-                    phone?: string;
-                    enrolledAt?: string;
-                    age?: number;
-                    education?: string;
-                    enrollPhone?: string;
-                    country?: string;
-                    notes?: string;
-                  };
                   const map: Record<
                     string,
-                    { courseId: number; courseTitle: string; students: EnrollmentStudent[] }
+                    { courseId: number; courseTitle: string; students: CourseEnrollmentItem[] }
                   > = {};
-                  users.forEach((u) => {
-                    (u.enrollments || []).forEach((e) => {
-                      const key = String(e.courseId);
-                      if (!map[key]) {
-                        map[key] = { courseId: e.courseId, courseTitle: e.courseTitle, students: [] };
-                      }
-                      map[key].students.push({
-                        _id: `${u._id}-${e.courseId}`,
-                        name: u.name,
-                        email: u.email,
-                        phone: u.phone,
-                        enrolledAt: e.enrolledAt,
-                        age: e.age,
-                        education: e.education,
-                        enrollPhone: e.phone,
-                        country: e.country,
-                        notes: e.notes,
-                      });
-                    });
+                  courseEnrollments.forEach((e) => {
+                    const key = String(e.courseId);
+                    if (!map[key]) {
+                      map[key] = { courseId: e.courseId, courseTitle: e.courseTitle, students: [] };
+                    }
+                    map[key].students.push(e);
                   });
-                  const list = Object.values(map).sort((a, b) => a.courseTitle.localeCompare(b.courseTitle));
+                  const list = Object.values(map).sort((a, b) =>
+                    a.courseTitle.localeCompare(b.courseTitle)
+                  );
                   if (list.length === 0) {
                     return <div className="py-12 text-center text-slate-400">No enrollments yet.</div>;
                   }
@@ -1446,7 +1485,18 @@ export default function AdminDashboard() {
                         <table className="min-w-full">
                           <thead>
                             <tr>
-                              {['Student', 'Age', 'Education', 'Phone', 'Country', 'Notes', 'Date'].map((h) => (
+                              {[
+                                'Student',
+                                'Age',
+                                'Education',
+                                'Phone',
+                                'Country',
+                                'Source',
+                                'Status',
+                                'Notes',
+                                'Date',
+                                'Actions',
+                              ].map((h) => (
                                 <th
                                   key={h}
                                   className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
@@ -1458,30 +1508,72 @@ export default function AdminDashboard() {
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {course.students.map((s) => (
-                              <tr key={s._id}>
+                              <tr key={s._id} className={s.status === 'new' ? 'bg-emerald-50/40' : ''}>
                                 <td className="px-4 py-3.5">
                                   <p className="font-medium text-slate-800">{s.name}</p>
-                                  <p className="text-sm text-slate-400">{s.email}</p>
+                                  <a
+                                    href={`mailto:${s.email}`}
+                                    className="text-sm text-[#12433f] hover:underline"
+                                  >
+                                    {s.email}
+                                  </a>
                                 </td>
                                 <td className="px-4 py-3.5 text-sm text-slate-600">{s.age ?? '—'}</td>
-                                <td className="max-w-[160px] px-4 py-3.5 text-sm text-slate-600">
+                                <td className="max-w-[140px] px-4 py-3.5 text-sm text-slate-600">
                                   <span className="line-clamp-2">{s.education || '—'}</span>
                                 </td>
                                 <td className="whitespace-nowrap px-4 py-3.5 text-sm">
-                                  {s.enrollPhone || s.phone ? (
-                                    <a href={`tel:${s.enrollPhone || s.phone}`} className="text-[#12433f] hover:underline">
-                                      {s.enrollPhone || s.phone}
+                                  {s.phone && s.phone !== 'N/A' ? (
+                                    <a href={`tel:${s.phone}`} className="text-[#12433f] hover:underline">
+                                      {s.phone}
                                     </a>
                                   ) : (
                                     '—'
                                   )}
                                 </td>
                                 <td className="px-4 py-3.5 text-sm text-slate-500">{s.country || '—'}</td>
-                                <td className="max-w-[180px] px-4 py-3.5 text-sm text-slate-500">
+                                <td className="px-4 py-3.5">
+                                  <span
+                                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                      s.source === 'guest'
+                                        ? 'bg-amber-50 text-amber-700'
+                                        : 'bg-sky-50 text-sky-700'
+                                    }`}
+                                  >
+                                    {s.source === 'guest' ? 'Guest' : 'Logged in'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <select
+                                    value={s.status}
+                                    onChange={(e) =>
+                                      updateEnrollmentStatus(
+                                        s._id,
+                                        e.target.value as CourseEnrollmentItem['status']
+                                      )
+                                    }
+                                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                                  >
+                                    <option value="new">New</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="closed">Closed</option>
+                                  </select>
+                                </td>
+                                <td className="max-w-[160px] px-4 py-3.5 text-sm text-slate-500">
                                   <span className="line-clamp-2">{s.notes || '—'}</span>
                                 </td>
                                 <td className="whitespace-nowrap px-4 py-3.5 text-xs text-slate-400">
-                                  {s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '—'}
+                                  {new Date(s.createdAt).toLocaleDateString()}
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteEnrollment(s._id)}
+                                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
+                                  >
+                                    Delete
+                                  </button>
                                 </td>
                               </tr>
                             ))}
