@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import TrialLead from '@/models/TrialLead';
 import { isEmailConfigured, sendAppMail } from '@/lib/mailer';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, country, phone, course, source } = body;
-
-    if (!isEmailConfigured()) {
-      console.error('Email configuration missing');
-      return NextResponse.json(
-        { error: 'Email service not configured. Please contact administrator.' },
-        { status: 500 }
-      );
-    }
 
     if (!name || !phone) {
       return NextResponse.json(
@@ -21,87 +15,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminResult = await sendAppMail({
-      replyTo: process.env.EMAIL_USER,
-      label: 'Trial Request',
-      subject: `New Free Trial Class Request: ${name}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background-color: #ffffff;">
-          <div style="background: linear-gradient(135deg, #12433f, #1a5c55); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-            <h1 style="color: white; margin: 0; font-size: 26px;">New Free Trial Class Request</h1>
-            <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">Quran Reading System Website</p>
-          </div>
+    await dbConnect();
 
-          <div style="padding: 30px; background-color: #ffffff;">
-            <div style="background-color: #f8fafc; padding: 25px; border-radius: 8px; border-left: 5px solid #12433f;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #374151; width: 160px;">Name:</td>
-                  <td style="padding: 8px 0; color: #1f2937;">${name}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Phone:</td>
-                  <td style="padding: 8px 0; color: #1f2937;"><a href="tel:${phone}" style="color: #12433f; text-decoration: none;">${phone}</a></td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Country:</td>
-                  <td style="padding: 8px 0; color: #1f2937;">${country || 'Not provided'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Desired Course:</td>
-                  <td style="padding: 8px 0; color: #1f2937;">${course || 'Not provided'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; color: #374151;">Heard About Us Via:</td>
-                  <td style="padding: 8px 0; color: #1f2937;">${source || 'Not provided'}</td>
-                </tr>
-              </table>
-            </div>
-
-            <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; margin-top: 25px; border-left: 5px solid #12433f;">
-              <h3 style="color: #065f46; margin: 0 0 15px 0; font-size: 18px;">Submission Details</h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #065f46; width: 120px;">Received:</td>
-                  <td style="padding: 5px 0; color: #065f46;">${new Date().toLocaleString()}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; font-weight: bold; color: #065f46;">IP Address:</td>
-                  <td style="padding: 5px 0; color: #065f46;">${request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Not available'}</td>
-                </tr>
-              </table>
-            </div>
-          </div>
-
-          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; margin: 0; font-size: 14px;">
-              This email was automatically generated from the Quran Reading System free trial class popup.
-            </p>
-          </div>
-        </div>
-      `,
+    const savedLead = await TrialLead.create({
+      name: String(name).trim(),
+      country: country ? String(country).trim() : '',
+      phone: String(phone).trim(),
+      course: course ? String(course).trim() : '',
+      source: source ? String(source).trim() : '',
+      status: 'new',
     });
 
-    console.log('Trial request email sent:', adminResult.messageId);
-
-    return NextResponse.json(
-      { message: 'Request submitted successfully' },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error('Error sending trial request email:', error);
-
-    let errorMessage = 'Failed to submit request';
-    if (error instanceof Error) {
-      if (error.message.includes('Invalid login') || error.message.includes('authentication')) {
-        errorMessage = 'Email authentication failed. Please check Hostinger email credentials.';
-      } else if (error.message.includes('ENOTFOUND')) {
-        errorMessage = 'Network error. Please check internet connection.';
-      } else {
-        errorMessage = `Email error: ${error.message}`;
+    if (isEmailConfigured()) {
+      try {
+        await sendAppMail({
+          replyTo: process.env.EMAIL_USER,
+          label: 'Trial Request',
+          subject: `New Free Trial Class Request: ${name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background-color: #ffffff;">
+              <div style="background: linear-gradient(135deg, #12433f, #1a5c55); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 26px;">New Free Trial Class Request</h1>
+                <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">Quran Reading System Website</p>
+              </div>
+              <div style="padding: 30px;">
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
+                <p><strong>Country:</strong> ${country || 'Not provided'}</p>
+                <p><strong>Desired Course:</strong> ${course || 'Not provided'}</p>
+                <p><strong>Heard About Us Via:</strong> ${source || 'Not provided'}</p>
+                <p style="color:#6b7280;font-size:12px;">Saved in admin panel (ID: ${savedLead._id})</p>
+              </div>
+            </div>
+          `,
+        });
+      } catch (emailError) {
+        console.error('Trial email notify failed (lead still saved):', emailError);
       }
     }
 
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      { message: 'Request submitted successfully', id: savedLead._id },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error saving trial request:', error);
+    return NextResponse.json(
+      { error: 'Failed to submit request. Please try again.' },
+      { status: 500 }
+    );
   }
 }

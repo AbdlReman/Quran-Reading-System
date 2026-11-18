@@ -39,7 +39,18 @@ interface NewsletterLeadItem {
   createdAt: string;
 }
 
-type TabKey = 'overview' | 'messages' | 'leads' | 'users' | 'enrollments';
+interface TrialLeadItem {
+  _id: string;
+  name: string;
+  country: string;
+  phone: string;
+  course: string;
+  source: string;
+  status: 'new' | 'contacted' | 'scheduled' | 'closed';
+  createdAt: string;
+}
+
+type TabKey = 'overview' | 'messages' | 'leads' | 'trials' | 'users' | 'enrollments';
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -48,6 +59,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [messages, setMessages] = useState<ContactMessageItem[]>([]);
   const [leads, setLeads] = useState<NewsletterLeadItem[]>([]);
+  const [trialLeads, setTrialLeads] = useState<TrialLeadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -67,6 +79,10 @@ export default function AdminDashboard() {
   const [leadSearch, setLeadSearch] = useState('');
   const [leadStatusFilter, setLeadStatusFilter] = useState<'all' | 'new' | 'contacted'>('all');
 
+  const [trialSearch, setTrialSearch] = useState('');
+  const [trialStatusFilter, setTrialStatusFilter] = useState<'all' | 'new' | 'contacted' | 'scheduled' | 'closed'>('all');
+  const [trialSort, setTrialSort] = useState<'newest' | 'oldest'>('newest');
+
   useEffect(() => {
     if (status === 'loading') return;
     if (!session || !session.user || (session.user as { role: string }).role !== 'admin') {
@@ -76,6 +92,7 @@ export default function AdminDashboard() {
     fetchUsers();
     fetchMessages();
     fetchLeads();
+    fetchTrialLeads();
   }, [session, status, router]);
 
   useEffect(() => {
@@ -117,6 +134,41 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching leads:', error);
+    }
+  };
+
+  const fetchTrialLeads = async () => {
+    try {
+      const response = await fetch('/api/admin/trial-leads', { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        setTrialLeads(data.trialLeads || []);
+      }
+    } catch (error) {
+      console.error('Error fetching trial leads:', error);
+    }
+  };
+
+  const updateTrialStatus = async (id: string, nextStatus: TrialLeadItem['status']) => {
+    try {
+      const response = await fetch('/api/admin/trial-leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: nextStatus }),
+      });
+      if (response.ok) fetchTrialLeads();
+    } catch (error) {
+      console.error('Error updating trial lead:', error);
+    }
+  };
+
+  const deleteTrialLead = async (id: string) => {
+    if (!confirm('Delete this free trial lead?')) return;
+    try {
+      const response = await fetch(`/api/admin/trial-leads?id=${id}`, { method: 'DELETE' });
+      if (response.ok) fetchTrialLeads();
+    } catch (error) {
+      console.error('Error deleting trial lead:', error);
     }
   };
 
@@ -194,6 +246,29 @@ export default function AdminDashboard() {
 
   const unreadCount = messages.filter((m) => m.status === 'new').length;
   const newLeadsCount = leads.filter((l) => l.status === 'new').length;
+  const newTrialCount = trialLeads.filter((t) => t.status === 'new').length;
+
+  const filteredTrialLeads = useMemo(() => {
+    const q = trialSearch.trim().toLowerCase();
+    let list = trialLeads.filter((lead) => {
+      const matchesSearch =
+        !q ||
+        lead.name.toLowerCase().includes(q) ||
+        lead.phone.toLowerCase().includes(q) ||
+        lead.country.toLowerCase().includes(q) ||
+        lead.course.toLowerCase().includes(q) ||
+        lead.source.toLowerCase().includes(q);
+      const matchesStatus = trialStatusFilter === 'all' || lead.status === trialStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+
+    list = [...list].sort((a, b) => {
+      const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return trialSort === 'newest' ? -diff : diff;
+    });
+
+    return list;
+  }, [trialLeads, trialSearch, trialStatusFilter, trialSort]);
 
   const filteredMessages = useMemo(() => {
     const q = messageSearch.trim().toLowerCase();
@@ -262,7 +337,8 @@ export default function AdminDashboard() {
   const navItems: Array<{ key: TabKey; label: string; badge?: number }> = [
     { key: 'overview', label: 'Overview' },
     { key: 'messages', label: 'Messages', badge: unreadCount },
-    { key: 'leads', label: 'Leads', badge: newLeadsCount },
+    { key: 'leads', label: 'Newsletter Leads', badge: newLeadsCount },
+    { key: 'trials', label: 'Free Trial Enrollment', badge: newTrialCount },
     { key: 'users', label: 'Users' },
     { key: 'enrollments', label: 'Enrollments' },
   ];
@@ -367,8 +443,8 @@ export default function AdminDashboard() {
               {[
                 { label: 'Total Users', value: users.length },
                 { label: 'Unread Messages', value: unreadCount },
-                { label: 'New Leads', value: newLeadsCount },
-                { label: 'Active Students', value: users.filter((u) => u.role === 'student' && u.isActive).length },
+                { label: 'New Newsletter Leads', value: newLeadsCount },
+                { label: 'New Trial Requests', value: newTrialCount },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/10 bg-[#122421] p-5">
                   <p className="text-sm text-white/50">{card.label}</p>
@@ -584,6 +660,126 @@ export default function AdminDashboard() {
                             >
                               Delete
                             </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {/* Free Trial Enrollment */}
+          {activeTab === 'trials' && (
+            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
+              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
+                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold">Free Trial Enrollment</h3>
+                    <p className="text-sm text-white/50 mt-1">
+                      {filteredTrialLeads.length} shown · {newTrialCount} new · {trialLeads.length} total
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[34rem]">
+                    <input
+                      type="search"
+                      value={trialSearch}
+                      onChange={(e) => setTrialSearch(e.target.value)}
+                      placeholder="Search name, phone, course..."
+                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white placeholder:text-white/35 outline-none focus:border-emerald-500/50"
+                    />
+                    <select
+                      value={trialStatusFilter}
+                      onChange={(e) => setTrialStatusFilter(e.target.value as typeof trialStatusFilter)}
+                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                    >
+                      <option value="all">All status</option>
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                    <select
+                      value={trialSort}
+                      onChange={(e) => setTrialSort(e.target.value as typeof trialSort)}
+                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                    >
+                      <option value="newest">Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-white/[0.03]">
+                    <tr>
+                      {['Name', 'Phone', 'Country', 'Course', 'Source', 'Status', 'Date', 'Actions'].map((h) => (
+                        <th key={h} className="px-4 sm:px-5 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/8">
+                    {filteredTrialLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-12 text-center text-white/45">
+                          No free trial leads yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTrialLeads.map((lead) => (
+                        <tr
+                          key={lead._id}
+                          className={`hover:bg-white/[0.03] ${lead.status === 'new' ? 'bg-emerald-500/5' : ''}`}
+                        >
+                          <td className="px-4 sm:px-5 py-4 font-medium whitespace-nowrap">{lead.name}</td>
+                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
+                            <a href={`tel:${lead.phone}`} className="text-emerald-300 hover:underline">
+                              {lead.phone}
+                            </a>
+                          </td>
+                          <td className="px-4 sm:px-5 py-4 text-sm text-white/70">{lead.country || '—'}</td>
+                          <td className="px-4 sm:px-5 py-4 text-sm text-white/80 max-w-[180px]">
+                            <span className="line-clamp-2">{lead.course || '—'}</span>
+                          </td>
+                          <td className="px-4 sm:px-5 py-4 text-sm text-white/60">{lead.source || '—'}</td>
+                          <td className="px-4 sm:px-5 py-4">
+                            <select
+                              value={lead.status}
+                              onChange={(e) => updateTrialStatus(lead._id, e.target.value as TrialLeadItem['status'])}
+                              className="px-3 py-2 rounded-lg text-sm bg-[#0b1614] border border-white/10 text-white"
+                            >
+                              <option value="new">New</option>
+                              <option value="contacted">Contacted</option>
+                              <option value="scheduled">Scheduled</option>
+                              <option value="closed">Closed</option>
+                            </select>
+                          </td>
+                          <td className="px-4 sm:px-5 py-4 text-sm text-white/45 whitespace-nowrap">
+                            {new Date(lead.createdAt).toLocaleString()}
+                          </td>
+                          <td className="px-4 sm:px-5 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              <a
+                                href={`https://wa.me/${lead.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(`Assalamualaikum ${lead.name}, regarding your free Quran trial request.`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-2 rounded-lg text-sm bg-[#12433f] hover:bg-[#16524d] text-white font-medium"
+                              >
+                                WhatsApp
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => deleteTrialLead(lead._id)}
+                                className="px-3 py-2 rounded-lg text-sm bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
