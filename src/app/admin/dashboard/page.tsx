@@ -61,6 +61,112 @@ interface TrialLeadItem {
 
 type TabKey = 'overview' | 'messages' | 'leads' | 'trials' | 'users' | 'enrollments';
 
+const BRAND = '#12433f';
+const GOLD = '#ae9143';
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+function monthLabel(date: Date) {
+  return date.toLocaleString('en', { month: 'short' });
+}
+
+function Donut({
+  value,
+  max,
+  color,
+  label,
+}: {
+  value: number;
+  max: number;
+  color: string;
+  label: string;
+}) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  const r = 34;
+  const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative h-[88px] w-[88px]">
+        <svg viewBox="0 0 88 88" className="h-full w-full -rotate-90">
+          <circle cx="44" cy="44" r={r} fill="none" stroke="#e8eeec" strokeWidth="10" />
+          <circle
+            cx="44"
+            cy="44"
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm font-bold text-slate-700">{pct}%</span>
+        </div>
+      </div>
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-sm font-bold text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+function Sparkline({ points, color }: { points: number[]; color: string }) {
+  const max = Math.max(...points, 1);
+  const w = 120;
+  const h = 36;
+  const path = points
+    .map((p, i) => {
+      const x = (i / Math.max(points.length - 1, 1)) * w;
+      const y = h - (p / max) * (h - 4) - 2;
+      return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+    })
+    .join(' ');
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-9 w-[120px]">
+      <path d={path} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BarChart({ series }: { series: Array<{ label: string; messages: number; trials: number; leads: number }> }) {
+  const max = Math.max(...series.flatMap((s) => [s.messages, s.trials, s.leads]), 1);
+  const barMax = 140;
+
+  return (
+    <div className="mt-4 flex items-end justify-between gap-3 px-1 pt-2">
+      {series.map((s) => (
+        <div key={s.label} className="flex flex-1 flex-col items-center gap-2">
+          <div className="flex h-[150px] items-end justify-center gap-1.5">
+            {[
+              { v: s.messages, c: BRAND },
+              { v: s.trials, c: GOLD },
+              { v: s.leads, c: '#3d8b7a' },
+            ].map((b, i) => (
+              <div
+                key={i}
+                className="w-3 rounded-t-md sm:w-3.5"
+                style={{
+                  height: `${Math.max((b.v / max) * barMax, b.v > 0 ? 8 : 3)}px`,
+                  background: b.c,
+                  opacity: b.v > 0 ? 1 : 0.25,
+                }}
+                title={String(b.v)}
+              />
+            ))}
+          </div>
+          <span className="text-xs font-semibold text-slate-500">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -72,6 +178,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const [headerSearch, setHeaderSearch] = useState('');
+  const [perfRange, setPerfRange] = useState<'day' | 'month' | 'year'>('month');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -257,12 +365,67 @@ export default function AdminDashboard() {
   const newLeadsCount = leads.filter((l) => l.status === 'new').length;
   const newTrialCount = trialLeads.filter((t) => t.status === 'new').length;
   const totalEnrollments = users.reduce((sum, u) => sum + (u.enrollments?.length || 0), 0);
+  const repliedCount = messages.filter((m) => m.status === 'replied').length;
+  const readCount = messages.filter((m) => m.status === 'read').length;
+
+  const chartSeries = useMemo(() => {
+    const now = new Date();
+    const months = [2, 1, 0].map((offset) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const key = monthKey(d);
+      const inMonth = (iso: string) => monthKey(new Date(iso)) === key;
+      return {
+        label: monthLabel(d),
+        messages: messages.filter((m) => inMonth(m.createdAt)).length,
+        trials: trialLeads.filter((t) => inMonth(t.createdAt)).length,
+        leads: leads.filter((l) => inMonth(l.createdAt)).length,
+      };
+    });
+    return months;
+  }, [messages, trialLeads, leads]);
+
+  const activitySpark = useMemo(() => {
+    const now = new Date();
+    return [5, 4, 3, 2, 1, 0].map((offset) => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      const key = d.toDateString();
+      return (
+        messages.filter((m) => new Date(m.createdAt).toDateString() === key).length +
+        trialLeads.filter((t) => new Date(t.createdAt).toDateString() === key).length +
+        leads.filter((l) => new Date(l.createdAt).toDateString() === key).length
+      );
+    });
+  }, [messages, trialLeads, leads]);
+
+  const enrollSpark = useMemo(() => {
+    const now = new Date();
+    return [5, 4, 3, 2, 1, 0].map((offset) => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      const key = d.toDateString();
+      let count = 0;
+      users.forEach((u) => {
+        (u.enrollments || []).forEach((e) => {
+          if (new Date(e.enrolledAt).toDateString() === key) count += 1;
+        });
+      });
+      return count;
+    });
+  }, [users]);
+
+  const wavePoints = useMemo(() => {
+    const base = [messages.length, trialLeads.length, leads.length, totalEnrollments, users.length, unreadCount];
+    const scaled = base.map((n) => Math.max(n, 1));
+    if (perfRange === 'day') return activitySpark.map((n) => n + 1);
+    if (perfRange === 'year') return scaled.map((n) => n * 1.4);
+    return scaled;
+  }, [messages.length, trialLeads.length, leads.length, totalEnrollments, users.length, unreadCount, perfRange, activitySpark]);
+
   const recentMessages = [...messages]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+    .slice(0, 4);
   const recentTrials = [...trialLeads]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+    .slice(0, 4);
 
   const filteredTrialLeads = useMemo(() => {
     const q = trialSearch.trim().toLowerCase();
@@ -277,12 +440,10 @@ export default function AdminDashboard() {
       const matchesStatus = trialStatusFilter === 'all' || lead.status === trialStatusFilter;
       return matchesSearch && matchesStatus;
     });
-
     list = [...list].sort((a, b) => {
       const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return trialSort === 'newest' ? -diff : diff;
     });
-
     return list;
   }, [trialLeads, trialSearch, trialStatusFilter, trialSort]);
 
@@ -297,21 +458,17 @@ export default function AdminDashboard() {
         msg.subject.toLowerCase().includes(q) ||
         msg.message.toLowerCase().includes(q) ||
         (msg.phone || '').toLowerCase().includes(q);
-
       const matchesStatus =
         messageStatusFilter === 'all' ||
         (messageStatusFilter === 'unread' && msg.status === 'new') ||
         (messageStatusFilter === 'read' && msg.status === 'read') ||
         (messageStatusFilter === 'replied' && msg.status === 'replied');
-
       return matchesSearch && matchesStatus;
     });
-
     list = [...list].sort((a, b) => {
       const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return messageSort === 'newest' ? -diff : diff;
     });
-
     return list;
   }, [messages, messageSearch, messageStatusFilter, messageSort]);
 
@@ -347,25 +504,48 @@ export default function AdminDashboard() {
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
-  const navItems: Array<{ key: TabKey; label: string; badge?: number; icon: string }> = [
-    { key: 'overview', label: 'Overview', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4' },
-    { key: 'messages', label: 'Messages', badge: unreadCount, icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-    { key: 'leads', label: 'Newsletter Leads', badge: newLeadsCount, icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2' },
-    { key: 'trials', label: 'Free Trial Enrollment', badge: newTrialCount, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { key: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197' },
-    { key: 'enrollments', label: 'Enroll Courses', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+  const navItems: Array<{ key: TabKey; label: string; badge?: number }> = [
+    { key: 'overview', label: 'Dashboard' },
+    { key: 'messages', label: 'Messages', badge: unreadCount },
+    { key: 'leads', label: 'Newsletter', badge: newLeadsCount },
+    { key: 'trials', label: 'Free Trial', badge: newTrialCount },
+    { key: 'users', label: 'Users' },
+    { key: 'enrollments', label: 'Enrollments' },
   ];
 
-  const tabTitles: Record<TabKey, string> = {
-    overview: 'Overview',
-    messages: 'Messages',
-    leads: 'Newsletter Leads',
-    trials: 'Free Trial Enrollment',
-    users: 'Users',
-    enrollments: 'Enroll Courses',
+  const navIcons: Record<TabKey, React.ReactNode> = {
+    overview: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 10.5V20h6v-9.5H4zm10 4V20h6v-5.5h-6zM4 4v4.5h6V4H4zm10 0v8.5h6V4h-6z" />
+      </svg>
+    ),
+    messages: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+    leads: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
+      </svg>
+    ),
+    trials: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    users: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m6-4a3 3 0 11-6 0 3 3 0 016 0zm6 0a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+    enrollments: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
   };
 
   const selectTab = (tab: TabKey) => {
@@ -373,12 +553,23 @@ export default function AdminDashboard() {
     setSidebarOpen(false);
   };
 
+  const adminInitials = (session?.user?.name || session?.user?.email || 'AD')
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const inputClass =
+    'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#12433f]/40 focus:ring-2 focus:ring-[#12433f]/10';
+  const cardClass = 'rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,40,35,0.05)]';
+
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#071210] flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#eef2f1]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-11 w-11 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400" />
-          <p className="text-sm text-white/50">Loading admin panel...</p>
+          <div className="h-11 w-11 animate-spin rounded-full border-2 border-[#12433f]/20 border-t-[#12433f]" />
+          <p className="text-sm text-slate-500">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -388,39 +579,43 @@ export default function AdminDashboard() {
     return null;
   }
 
+  const waveMax = Math.max(...wavePoints, 1);
+  const wavePath = wavePoints
+    .map((p, i) => {
+      const x = (i / Math.max(wavePoints.length - 1, 1)) * 320;
+      const y = 90 - (p / waveMax) * 70;
+      return `${i === 0 ? 'M' : 'L'}${x},${y}`;
+    })
+    .join(' ');
+
   return (
-    <div className="min-h-screen bg-[#071210] text-white">
+    <div className="min-h-screen bg-[#eef2f1] text-slate-800">
       {sidebarOpen && (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-[1px] lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Left Sidebar */}
+      {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 flex h-screen w-[17.5rem] flex-col border-r border-white/[0.08] bg-[#0c1a17] transition-transform duration-200 ${
+        className={`fixed left-0 top-0 z-40 flex h-screen w-[15.5rem] flex-col bg-[#12433f] px-4 py-6 text-white transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="border-b border-white/[0.08] px-5 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c55] to-[#0e3733] text-sm font-bold text-[#d4b86a] shadow-lg shadow-emerald-950/40">
-              QRS
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c4a35a]">Admin Panel</p>
-              <h1 className="truncate text-[15px] font-bold leading-tight">Quran Reading System</h1>
-            </div>
+        <div className="mb-8 flex items-center gap-3 px-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-[#f0d78c]">
+            QRS
           </div>
-          <p className="mt-3 truncate rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-white/45">
-            {session.user.email}
-          </p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#d7c08a]">Admin</p>
+            <p className="text-sm font-bold leading-tight">Reading System</p>
+          </div>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        <nav className="flex-1 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const active = activeTab === item.key;
             return (
@@ -428,27 +623,15 @@ export default function AdminDashboard() {
                 key={item.key}
                 type="button"
                 onClick={() => selectTab(item.key)}
-                className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-[#144842] text-white shadow-sm shadow-black/20'
-                    : 'text-white/65 hover:bg-white/[0.04] hover:text-white'
+                className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition ${
+                  active ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/8 hover:text-white'
                 }`}
               >
-                {active && (
-                  <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#c4a35a]" />
-                )}
-                <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                    active ? 'bg-white/10 text-[#d4b86a]' : 'bg-white/[0.04] text-white/50 group-hover:text-white/80'
-                  }`}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                  </svg>
-                </span>
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                {typeof item.badge === 'number' && item.badge > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c4a35a] px-1.5 text-[11px] font-bold text-[#0c1a17]">
+                <span className={active ? 'text-[#f0d78c]' : 'text-white/60'}>{navIcons[item.key]}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                {!active && typeof item.badge === 'number' && item.badge > 0 && (
+                  <span className="rounded-full bg-[#ae9143] px-1.5 py-0.5 text-[10px] font-bold text-[#12433f]">
                     {item.badge}
                   </span>
                 )}
@@ -457,173 +640,282 @@ export default function AdminDashboard() {
           })}
         </nav>
 
-        <div className="border-t border-white/[0.08] p-4">
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
-          >
-            Sign Out
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-[#12433f] shadow-lg shadow-black/10 transition hover:bg-[#f7f4ea]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+          </svg>
+          Logout
+        </button>
       </aside>
 
       {/* Main */}
-      <div className="min-h-screen lg:pl-[17.5rem]">
-        <header className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#071210]/85 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+      <div className="min-h-screen lg:pl-[15.5rem]">
+        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-[#eef2f1]/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <div className="relative min-w-0 flex-1">
+              <svg
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path strokeLinecap="round" d="M20 20l-3-3" />
+              </svg>
+              <input
+                value={headerSearch}
+                onChange={(e) => {
+                  setHeaderSearch(e.target.value);
+                  if (activeTab === 'messages') setMessageSearch(e.target.value);
+                  if (activeTab === 'leads') setLeadSearch(e.target.value);
+                  if (activeTab === 'trials') setTrialSearch(e.target.value);
+                  if (activeTab === 'users') setSearchTerm(e.target.value);
+                }}
+                placeholder="Search users, messages, leads..."
+                className="h-12 w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#12433f]/35 focus:ring-2 focus:ring-[#12433f]/10"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Open menu"
+                onClick={() => selectTab('messages')}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#12433f]/30"
+                aria-label="Notifications"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
+                {unreadCount + newTrialCount > 0 && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ae9143]" />
+                )}
               </button>
-              <div>
-                <h2 className="text-lg font-bold sm:text-xl">{tabTitles[activeTab]}</h2>
-                <p className="text-xs text-white/45">
-                  Manage academy data, leads, and enrollments
-                </p>
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#12433f] text-sm font-bold text-white shadow-md">
+                {adminInitials}
               </div>
-            </div>
-            <div className="hidden items-center gap-2 sm:flex">
-              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                Live admin
-              </span>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+        <main className="mx-auto max-w-[1400px] space-y-5 p-4 sm:p-6 lg:p-8">
+          {/* Overview */}
           {activeTab === 'overview' && (
-            <section className="space-y-6">
-              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#123832] via-[#0e2925] to-[#0a1c19] p-6 sm:p-7">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#c4a35a]/10 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-12 left-20 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c4a35a]">Dashboard</p>
-                <h3 className="mt-1 text-2xl font-bold sm:text-3xl">Assalamualaikum, Admin</h3>
-                <p className="mt-2 max-w-xl text-sm text-white/55">
-                  Review new inquiries, trial requests, and course enrollments from one place.
-                </p>
+            <section className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+              <div className="space-y-5 xl:col-span-7">
+                <div className={`${cardClass} p-5 sm:p-6`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Analytics</h3>
+                      <p className="mt-1 text-sm text-slate-500">Messages, trials & newsletter leads</p>
+                    </div>
+                    <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      Last 3 months
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-4 text-xs font-medium text-slate-500">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#12433f]" /> Messages
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#ae9143]" /> Trials
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#3d8b7a]" /> Newsletter
+                    </span>
+                  </div>
+                  <BarChart series={chartSeries} />
+                </div>
+
+                <div className={`${cardClass} p-5 sm:p-6`}>
+                  <h3 className="text-lg font-bold text-slate-800">Activity overview</h3>
+                  <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-[#f6f8f7] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Users</p>
+                          <p className="mt-1 text-3xl font-bold text-slate-800">{users.length}</p>
+                          <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                            ↑ Active accounts
+                          </p>
+                        </div>
+                        <Sparkline points={activitySpark} color={BRAND} />
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-[#f6f8f7] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Enrollments</p>
+                          <p className="mt-1 text-3xl font-bold text-slate-800">{totalEnrollments}</p>
+                          <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#ae9143]">
+                            ↑ Course signups
+                          </p>
+                        </div>
+                        <Sparkline points={enrollSpark} color={GOLD} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`${cardClass} p-5 sm:p-6`}>
+                  <h3 className="mb-5 text-lg font-bold text-slate-800">Message status</h3>
+                  <div className="flex flex-wrap items-center justify-around gap-6">
+                    <Donut value={unreadCount} max={Math.max(messages.length, 1)} color={BRAND} label="Unread" />
+                    <Donut value={readCount} max={Math.max(messages.length, 1)} color="#3d8b7a" label="Read" />
+                    <Donut value={repliedCount} max={Math.max(messages.length, 1)} color={GOLD} label="Replied" />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[
-                  { key: 'users' as TabKey, label: 'Total Users', value: users.length, accent: 'text-sky-300', bg: 'from-sky-500/15 to-transparent' },
-                  { key: 'messages' as TabKey, label: 'Unread Messages', value: unreadCount, accent: 'text-emerald-300', bg: 'from-emerald-500/15 to-transparent' },
-                  { key: 'leads' as TabKey, label: 'Newsletter Leads', value: newLeadsCount, accent: 'text-amber-300', bg: 'from-amber-500/15 to-transparent' },
-                  { key: 'trials' as TabKey, label: 'Trial Requests', value: newTrialCount, accent: 'text-teal-300', bg: 'from-teal-500/15 to-transparent' },
-                  { key: 'enrollments' as TabKey, label: 'Enrollments', value: totalEnrollments, accent: 'text-[#d4b86a]', bg: 'from-[#c4a35a]/15 to-transparent' },
-                  { key: 'messages' as TabKey, label: 'All Messages', value: messages.length, accent: 'text-white', bg: 'from-white/10 to-transparent' },
-                ].map((card) => (
-                  <button
-                    key={card.label}
-                    type="button"
-                    onClick={() => selectTab(card.key)}
-                    className={`rounded-2xl border border-white/[0.08] bg-gradient-to-b ${card.bg} bg-[#0f221e] p-5 text-left transition hover:border-white/20 hover:bg-[#132824]`}
-                  >
-                    <p className="text-xs font-medium uppercase tracking-wide text-white/45">{card.label}</p>
-                    <p className={`mt-3 text-3xl font-bold tabular-nums ${card.accent}`}>{card.value}</p>
-                    <p className="mt-2 text-xs text-white/35">Open section →</p>
-                  </button>
-                ))}
-              </div>
+              <div className="space-y-5 xl:col-span-5">
+                <div className={`${cardClass} p-5 sm:p-6`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-bold text-slate-800">Performance</h3>
+                    <div className="flex rounded-full bg-slate-100 p-1">
+                      {([
+                        ['day', 'Day'],
+                        ['month', 'Month'],
+                        ['year', 'Year'],
+                      ] as const).map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setPerfRange(key)}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                            perfRange === key ? 'bg-[#12433f] text-white' : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] p-5 lg:col-span-1">
-                  <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Quick actions</h4>
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-5 grid grid-cols-3 gap-3">
                     {[
-                      { key: 'messages' as TabKey, label: 'Review messages', hint: `${unreadCount} unread` },
-                      { key: 'trials' as TabKey, label: 'Free trial leads', hint: `${newTrialCount} new` },
-                      { key: 'enrollments' as TabKey, label: 'Course enrollments', hint: `${totalEnrollments} total` },
-                      { key: 'users' as TabKey, label: 'Manage users', hint: `${users.length} accounts` },
-                    ].map((action) => (
-                      <button
-                        key={action.key + action.label}
-                        type="button"
-                        onClick={() => selectTab(action.key)}
-                        className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3 text-left transition hover:border-emerald-500/30 hover:bg-emerald-500/10"
-                      >
-                        <span className="text-sm font-medium">{action.label}</span>
-                        <span className="text-xs text-white/40">{action.hint}</span>
-                      </button>
+                      { label: 'Messages', value: messages.length },
+                      { label: 'Trials', value: trialLeads.length },
+                      { label: 'Leads', value: leads.length },
+                    ].map((kpi) => (
+                      <div key={kpi.label} className="rounded-2xl bg-[#f6f8f7] px-3 py-3 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{kpi.label}</p>
+                        <p className="mt-1 text-xl font-bold text-slate-800">{kpi.value}</p>
+                      </div>
                     ))}
                   </div>
-                </div>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] overflow-hidden lg:col-span-1">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Recent messages</h4>
-                    <button type="button" onClick={() => selectTab('messages')} className="text-xs text-emerald-300 hover:underline">
-                      View all
-                    </button>
-                  </div>
-                  <div className="divide-y divide-white/[0.06]">
-                    {recentMessages.length === 0 ? (
-                      <p className="px-5 py-8 text-center text-sm text-white/40">No messages yet</p>
-                    ) : (
-                      recentMessages.map((msg) => (
-                        <button
-                          key={msg._id}
-                          type="button"
-                          onClick={() => selectTab('messages')}
-                          className="flex w-full flex-col gap-1 px-5 py-3.5 text-left hover:bg-white/[0.03]"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-sm font-medium">
-                              {msg.firstName} {msg.lastName}
-                            </p>
-                            {msg.status === 'new' && (
-                              <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                                New
-                              </span>
-                            )}
-                          </div>
-                          <p className="truncate text-xs text-white/45">{msg.subject}</p>
-                        </button>
-                      ))
-                    )}
+                  <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-b from-[#e8f1ef] to-white p-3">
+                    <svg viewBox="0 0 320 100" className="h-28 w-full">
+                      <path d={`${wavePath} L320,100 L0,100 Z`} fill="rgba(18,67,63,0.12)" />
+                      <path d={wavePath} fill="none" stroke={BRAND} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] overflow-hidden lg:col-span-1">
-                  <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-                    <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Recent trials</h4>
-                    <button type="button" onClick={() => selectTab('trials')} className="text-xs text-emerald-300 hover:underline">
-                      View all
-                    </button>
-                  </div>
-                  <div className="divide-y divide-white/[0.06]">
-                    {recentTrials.length === 0 ? (
-                      <p className="px-5 py-8 text-center text-sm text-white/40">No trial leads yet</p>
-                    ) : (
-                      recentTrials.map((lead) => (
-                        <button
-                          key={lead._id}
-                          type="button"
-                          onClick={() => selectTab('trials')}
-                          className="flex w-full flex-col gap-1 px-5 py-3.5 text-left hover:bg-white/[0.03]"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-sm font-medium">{lead.name}</p>
-                            {lead.status === 'new' && (
-                              <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
-                                New
-                              </span>
-                            )}
-                          </div>
-                          <p className="truncate text-xs text-white/45">
-                            {lead.course || 'Trial'} · {lead.phone}
-                          </p>
+                <div className={`${cardClass} overflow-hidden`}>
+                  <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                    <div className="p-5">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-800">Recent messages</h4>
+                        <button type="button" onClick={() => selectTab('messages')} className="text-xs font-semibold text-[#12433f]">
+                          View
                         </button>
-                      ))
-                    )}
+                      </div>
+                      <div className="space-y-3">
+                        {recentMessages.length === 0 ? (
+                          <p className="text-sm text-slate-400">No messages yet</p>
+                        ) : (
+                          recentMessages.map((msg, idx) => (
+                            <button
+                              key={msg._id}
+                              type="button"
+                              onClick={() => selectTab('messages')}
+                              className="flex w-full items-start gap-3 text-left"
+                            >
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#12433f]/10 text-[11px] font-bold text-[#12433f]">
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-semibold text-slate-700">
+                                  {msg.firstName} {msg.lastName}
+                                </span>
+                                <span className="block truncate text-xs text-slate-400">{msg.subject}</span>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-slate-800">Trial requests</h4>
+                        <button type="button" onClick={() => selectTab('trials')} className="text-xs font-semibold text-[#12433f]">
+                          View
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {recentTrials.length === 0 ? (
+                          <p className="text-sm text-slate-400">No trial leads yet</p>
+                        ) : (
+                          recentTrials.map((lead, idx) => (
+                            <button
+                              key={lead._id}
+                              type="button"
+                              onClick={() => selectTab('trials')}
+                              className="flex w-full items-start gap-3 text-left"
+                            >
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#ae9143]/15 text-[11px] font-bold text-[#8a6f2e]">
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-semibold text-slate-700">{lead.name}</span>
+                                <span className="block truncate text-xs text-slate-400">
+                                  {lead.course || 'Trial'} · {lead.phone}
+                                </span>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: 'Unread', value: unreadCount, tab: 'messages' as TabKey },
+                    { label: 'New trials', value: newTrialCount, tab: 'trials' as TabKey },
+                    { label: 'New leads', value: newLeadsCount, tab: 'leads' as TabKey },
+                    { label: 'Enrollments', value: totalEnrollments, tab: 'enrollments' as TabKey },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => selectTab(item.tab)}
+                      className={`${cardClass} p-4 text-left transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(15,40,35,0.08)]`}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
+                      <p className="mt-2 text-2xl font-bold text-[#12433f]">{item.value}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
             </section>
@@ -631,27 +923,27 @@ export default function AdminDashboard() {
 
           {/* Messages */}
           {activeTab === 'messages' && (
-            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
-              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <section className={`${cardClass} overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold">Contact Messages</h3>
-                    <p className="text-sm text-white/50 mt-1">
+                    <h3 className="text-xl font-bold text-slate-800">Contact Messages</h3>
+                    <p className="mt-1 text-sm text-slate-500">
                       {filteredMessages.length} shown · {unreadCount} unread · {messages.length} total
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[34rem]">
+                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
                     <input
                       type="search"
                       value={messageSearch}
                       onChange={(e) => setMessageSearch(e.target.value)}
                       placeholder="Search name, email, subject..."
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white placeholder:text-white/35 outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     />
                     <select
                       value={messageStatusFilter}
                       onChange={(e) => setMessageStatusFilter(e.target.value as typeof messageStatusFilter)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     >
                       <option value="all">All status</option>
                       <option value="unread">Unread</option>
@@ -661,7 +953,7 @@ export default function AdminDashboard() {
                     <select
                       value={messageSort}
                       onChange={(e) => setMessageSort(e.target.value as typeof messageSort)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     >
                       <option value="newest">Newest first</option>
                       <option value="oldest">Oldest first</option>
@@ -670,83 +962,74 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="divide-y divide-white/8">
+              <div className="divide-y divide-slate-100">
                 {filteredMessages.length === 0 ? (
-                  <div className="px-6 py-16 text-center text-white/45">No messages match your filters.</div>
+                  <div className="px-6 py-16 text-center text-slate-400">No messages match your filters.</div>
                 ) : (
                   filteredMessages.map((msg) => (
-                    <div
-                      key={msg._id}
-                      className={`px-5 sm:px-6 py-5 transition-colors ${
-                        msg.status === 'new' ? 'bg-emerald-500/5' : 'hover:bg-white/[0.03]'
-                      }`}
-                    >
-                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div key={msg._id} className={`px-5 py-5 sm:px-6 ${msg.status === 'new' ? 'bg-emerald-50/50' : ''}`}>
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
                             <span
-                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${
                                 msg.status === 'new'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                   : msg.status === 'read'
-                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                  : 'bg-white/10 text-white/70 border-white/15'
+                                  ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                  : 'border-slate-200 bg-slate-50 text-slate-600'
                               }`}
                             >
                               {msg.status === 'new' ? 'unread' : msg.status}
                             </span>
-                            <span className="text-xs text-white/40">{new Date(msg.createdAt).toLocaleString()}</span>
+                            <span className="text-xs text-slate-400">{new Date(msg.createdAt).toLocaleString()}</span>
                           </div>
-                          <h4 className="text-base font-semibold">
+                          <h4 className="text-base font-semibold text-slate-800">
                             {msg.firstName} {msg.lastName}
                           </h4>
-                          <p className="text-sm text-white/60 mt-1">
-                            <a href={`mailto:${msg.email}`} className="text-emerald-300 hover:underline">{msg.email}</a>
+                          <p className="mt-1 text-sm text-slate-500">
+                            <a href={`mailto:${msg.email}`} className="text-[#12433f] hover:underline">
+                              {msg.email}
+                            </a>
                             {msg.phone ? (
                               <>
                                 {' · '}
-                                <a href={`tel:${msg.phone}`} className="text-emerald-300 hover:underline">{msg.phone}</a>
+                                <a href={`tel:${msg.phone}`} className="text-[#12433f] hover:underline">
+                                  {msg.phone}
+                                </a>
                               </>
                             ) : null}
                           </p>
-                          <p className="text-sm text-white/70 mt-2">
-                            <span className="text-white/45">Subject:</span> {msg.subject}
+                          <p className="mt-2 text-sm text-slate-600">
+                            <span className="text-slate-400">Subject:</span> {msg.subject}
                           </p>
-                          <p className={`text-sm text-white/75 mt-2 whitespace-pre-wrap ${expandedMessageId === msg._id ? '' : 'line-clamp-2'}`}>
+                          <p className={`mt-2 text-sm text-slate-600 ${expandedMessageId === msg._id ? '' : 'line-clamp-2'}`}>
                             {msg.message}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setExpandedMessageId(expandedMessageId === msg._id ? null : msg._id);
-                              if (msg.status === 'new') updateMessageStatus(msg._id, 'read');
-                            }}
-                            className="mt-2 text-xs text-emerald-300 hover:text-emerald-200"
-                          >
-                            {expandedMessageId === msg._id ? 'Show less' : 'Read full message'}
-                          </button>
+                          {msg.message.length > 120 && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMessageId(expandedMessageId === msg._id ? null : msg._id)}
+                              className="mt-1 text-xs font-semibold text-[#12433f]"
+                            >
+                              {expandedMessageId === msg._id ? 'Show less' : 'Read more'}
+                            </button>
+                          )}
                         </div>
-
-                        <div className="flex flex-wrap gap-2 shrink-0">
+                        <div className="flex flex-wrap gap-2">
                           <select
                             value={msg.status}
                             onChange={(e) => updateMessageStatus(msg._id, e.target.value as ContactMessageItem['status'])}
-                            className="px-3 py-2 rounded-lg text-sm bg-[#0b1614] border border-white/10 text-white"
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
                           >
                             <option value="new">Unread</option>
                             <option value="read">Read</option>
                             <option value="replied">Replied</option>
                           </select>
-                          <a
-                            href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
-                            className="px-3 py-2 rounded-lg text-sm bg-[#12433f] hover:bg-[#16524d] text-white font-medium"
-                          >
-                            Reply
-                          </a>
                           <button
                             type="button"
                             onClick={() => deleteMessage(msg._id)}
-                            className="px-3 py-2 rounded-lg text-sm bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30"
+                            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600"
                           >
                             Delete
                           </button>
@@ -759,29 +1042,29 @@ export default function AdminDashboard() {
             </section>
           )}
 
-          {/* Leads */}
+          {/* Newsletter Leads */}
           {activeTab === 'leads' && (
-            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
-              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <section className={`${cardClass} overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold">Newsletter Leads</h3>
-                    <p className="text-sm text-white/50 mt-1">
+                    <h3 className="text-xl font-bold text-slate-800">Newsletter Leads</h3>
+                    <p className="mt-1 text-sm text-slate-500">
                       {filteredLeads.length} shown · {newLeadsCount} new · {leads.length} total
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto lg:min-w-[26rem]">
+                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[28rem]">
                     <input
                       type="search"
                       value={leadSearch}
                       onChange={(e) => setLeadSearch(e.target.value)}
                       placeholder="Search email or source..."
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white placeholder:text-white/35 outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     />
                     <select
                       value={leadStatusFilter}
                       onChange={(e) => setLeadStatusFilter(e.target.value as typeof leadStatusFilter)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     >
                       <option value="all">All status</option>
                       <option value="new">New</option>
@@ -793,45 +1076,45 @@ export default function AdminDashboard() {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-white/[0.03]">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">Source</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">Actions</th>
+                      {['Email', 'Source', 'Status', 'Date', 'Actions'].map((h) => (
+                        <th key={h} className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/8">
+                  <tbody className="divide-y divide-slate-100">
                     {filteredLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-white/45">No leads match your filters.</td>
+                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                          No newsletter leads yet.
+                        </td>
                       </tr>
                     ) : (
                       filteredLeads.map((lead) => (
-                        <tr key={lead._id} className="hover:bg-white/[0.03]">
-                          <td className="px-6 py-4">
-                            <a href={`mailto:${lead.email}`} className="text-emerald-300 hover:underline font-medium">
-                              {lead.email}
-                            </a>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-white/70 capitalize">{lead.source}</td>
-                          <td className="px-6 py-4">
+                        <tr key={lead._id} className={lead.status === 'new' ? 'bg-amber-50/40' : ''}>
+                          <td className="px-5 py-4 text-sm font-medium text-slate-800">{lead.email}</td>
+                          <td className="px-5 py-4 text-sm text-slate-500">{lead.source || '—'}</td>
+                          <td className="px-5 py-4">
                             <select
                               value={lead.status}
                               onChange={(e) => updateLeadStatus(lead._id, e.target.value as NewsletterLeadItem['status'])}
-                              className="px-3 py-2 rounded-lg text-sm bg-[#0b1614] border border-white/10 text-white"
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                             >
                               <option value="new">New</option>
                               <option value="contacted">Contacted</option>
                             </select>
                           </td>
-                          <td className="px-6 py-4 text-sm text-white/45">{new Date(lead.createdAt).toLocaleString()}</td>
-                          <td className="px-6 py-4">
+                          <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-400">
+                            {new Date(lead.createdAt).toLocaleString()}
+                          </td>
+                          <td className="px-5 py-4">
                             <button
                               type="button"
                               onClick={() => deleteLead(lead._id)}
-                              className="px-3 py-2 rounded-lg text-sm bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30"
+                              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
                             >
                               Delete
                             </button>
@@ -845,29 +1128,29 @@ export default function AdminDashboard() {
             </section>
           )}
 
-          {/* Free Trial Enrollment */}
+          {/* Free Trial */}
           {activeTab === 'trials' && (
-            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
-              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <section className={`${cardClass} overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold">Free Trial Enrollment</h3>
-                    <p className="text-sm text-white/50 mt-1">
+                    <h3 className="text-xl font-bold text-slate-800">Free Trial Enrollment</h3>
+                    <p className="mt-1 text-sm text-slate-500">
                       {filteredTrialLeads.length} shown · {newTrialCount} new · {trialLeads.length} total
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[34rem]">
+                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
                     <input
                       type="search"
                       value={trialSearch}
                       onChange={(e) => setTrialSearch(e.target.value)}
                       placeholder="Search name, phone, course..."
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white placeholder:text-white/35 outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     />
                     <select
                       value={trialStatusFilter}
                       onChange={(e) => setTrialStatusFilter(e.target.value as typeof trialStatusFilter)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     >
                       <option value="all">All status</option>
                       <option value="new">New</option>
@@ -878,7 +1161,7 @@ export default function AdminDashboard() {
                     <select
                       value={trialSort}
                       onChange={(e) => setTrialSort(e.target.value as typeof trialSort)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     >
                       <option value="newest">Newest first</option>
                       <option value="oldest">Oldest first</option>
@@ -889,44 +1172,41 @@ export default function AdminDashboard() {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-white/[0.03]">
+                  <thead className="bg-slate-50">
                     <tr>
                       {['Name', 'Phone', 'Country', 'Course', 'Source', 'Status', 'Date', 'Actions'].map((h) => (
-                        <th key={h} className="px-4 sm:px-5 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">
+                        <th key={h} className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400 sm:px-5">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/8">
+                  <tbody className="divide-y divide-slate-100">
                     {filteredTrialLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-white/45">
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
                           No free trial leads yet.
                         </td>
                       </tr>
                     ) : (
                       filteredTrialLeads.map((lead) => (
-                        <tr
-                          key={lead._id}
-                          className={`hover:bg-white/[0.03] ${lead.status === 'new' ? 'bg-emerald-500/5' : ''}`}
-                        >
-                          <td className="px-4 sm:px-5 py-4 font-medium whitespace-nowrap">{lead.name}</td>
-                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
-                            <a href={`tel:${lead.phone}`} className="text-emerald-300 hover:underline">
+                        <tr key={lead._id} className={lead.status === 'new' ? 'bg-emerald-50/40' : ''}>
+                          <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-800 sm:px-5">{lead.name}</td>
+                          <td className="whitespace-nowrap px-4 py-4 sm:px-5">
+                            <a href={`tel:${lead.phone}`} className="text-[#12433f] hover:underline">
                               {lead.phone}
                             </a>
                           </td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/70">{lead.country || '—'}</td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/80 max-w-[180px]">
+                          <td className="px-4 py-4 text-sm text-slate-500 sm:px-5">{lead.country || '—'}</td>
+                          <td className="max-w-[160px] px-4 py-4 text-sm text-slate-600 sm:px-5">
                             <span className="line-clamp-2">{lead.course || '—'}</span>
                           </td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/60">{lead.source || '—'}</td>
-                          <td className="px-4 sm:px-5 py-4">
+                          <td className="px-4 py-4 text-sm text-slate-500 sm:px-5">{lead.source || '—'}</td>
+                          <td className="px-4 py-4 sm:px-5">
                             <select
                               value={lead.status}
                               onChange={(e) => updateTrialStatus(lead._id, e.target.value as TrialLeadItem['status'])}
-                              className="px-3 py-2 rounded-lg text-sm bg-[#0b1614] border border-white/10 text-white"
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                             >
                               <option value="new">New</option>
                               <option value="contacted">Contacted</option>
@@ -934,23 +1214,25 @@ export default function AdminDashboard() {
                               <option value="closed">Closed</option>
                             </select>
                           </td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/45 whitespace-nowrap">
+                          <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-400 sm:px-5">
                             {new Date(lead.createdAt).toLocaleString()}
                           </td>
-                          <td className="px-4 sm:px-5 py-4">
+                          <td className="px-4 py-4 sm:px-5">
                             <div className="flex flex-wrap gap-2">
                               <a
-                                href={`https://wa.me/${lead.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(`Assalamualaikum ${lead.name}, regarding your free Quran trial request.`)}`}
+                                href={`https://wa.me/${lead.phone.replace(/[^\d]/g, '')}?text=${encodeURIComponent(
+                                  `Assalamualaikum ${lead.name}, regarding your free Quran trial request.`
+                                )}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-3 py-2 rounded-lg text-sm bg-[#12433f] hover:bg-[#16524d] text-white font-medium"
+                                className="rounded-lg bg-[#12433f] px-3 py-2 text-sm font-medium text-white"
                               >
                                 WhatsApp
                               </a>
                               <button
                                 type="button"
                                 onClick={() => deleteTrialLead(lead._id)}
-                                className="px-3 py-2 rounded-lg text-sm bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30"
+                                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
                               >
                                 Delete
                               </button>
@@ -967,42 +1249,32 @@ export default function AdminDashboard() {
 
           {/* Users */}
           {activeTab === 'users' && (
-            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
-              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <section className={`${cardClass} overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold">User Management</h3>
-                    <p className="text-sm text-white/50 mt-1">
-                      Showing {filteredUsers.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length}
-                    </p>
+                    <h3 className="text-xl font-bold text-slate-800">Users</h3>
+                    <p className="mt-1 text-sm text-slate-500">{filteredUsers.length} users</p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[34rem]">
+                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
                     <input
                       type="search"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search name or email..."
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white placeholder:text-white/35 outline-none focus:border-emerald-500/50"
+                      className={inputClass}
                     />
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="student">Students</option>
-                      <option value="teacher">Teachers</option>
-                      <option value="admin">Admins</option>
+                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={inputClass}>
+                      <option value="all">All roles</option>
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="admin">Admin</option>
                     </select>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-3.5 py-2.5 rounded-xl bg-[#0b1614] border border-white/10 text-sm text-white outline-none focus:border-emerald-500/50"
-                    >
-                      <option value="name">Sort by Name</option>
-                      <option value="email">Sort by Email</option>
-                      <option value="role">Sort by Role</option>
-                      <option value="created">Sort by Date</option>
+                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={inputClass}>
+                      <option value="name">Sort by name</option>
+                      <option value="email">Sort by email</option>
+                      <option value="role">Sort by role</option>
+                      <option value="created">Newest first</option>
                     </select>
                   </div>
                 </div>
@@ -1010,96 +1282,80 @@ export default function AdminDashboard() {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-white/[0.03]">
+                  <thead className="bg-slate-50">
                     <tr>
-                      {['Name', 'Email', 'Phone', 'Role', 'Status', 'Courses', 'Joined', 'Actions'].map((h) => (
-                        <th key={h} className="px-4 sm:px-5 py-4 text-left text-xs font-bold text-white/60 uppercase tracking-wider">
+                      {['User', 'Role', 'Status', 'Enrollments', 'Joined', 'Actions'].map((h) => (
+                        <th key={h} className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/8">
-                    {paginatedUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-white/45">No users found.</td>
-                      </tr>
-                    ) : (
-                      paginatedUsers.map((user) => (
-                        <tr key={user._id} className="hover:bg-white/[0.03]">
-                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <div className="h-9 w-9 rounded-full bg-[#12433f] flex items-center justify-center shrink-0">
-                                <span className="text-sm font-bold">{user.name.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <div>
-                                <div className="text-sm font-semibold">{user.name}</div>
-                                <div className="text-xs text-white/35 font-mono">{user._id.slice(0, 8)}</div>
-                              </div>
+                  <tbody className="divide-y divide-slate-100">
+                    {paginatedUsers.map((user) => (
+                      <tr key={user._id}>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#12433f]/10 text-xs font-bold text-[#12433f]">
+                              {user.name
+                                .split(' ')
+                                .map((p) => p[0])
+                                .join('')
+                                .slice(0, 2)
+                                .toUpperCase()}
                             </div>
-                          </td>
-                          <td className="px-4 sm:px-5 py-4">
-                            <a href={`mailto:${user.email}`} className="text-sm text-emerald-300 hover:underline">{user.email}</a>
-                          </td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/70 whitespace-nowrap">
-                            {user.phone || '—'}
-                          </td>
-                          <td className="px-4 sm:px-5 py-4">
-                            <select
-                              value={user.role}
-                              onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs bg-[#0b1614] border border-white/10 text-white"
-                            >
-                              <option value="student">Student</option>
-                              <option value="teacher">Teacher</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          </td>
-                          <td className="px-4 sm:px-5 py-4">
-                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                            <div>
+                              <p className="font-semibold text-slate-800">{user.name}</p>
+                              <p className="text-sm text-slate-400">{user.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                          >
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleUserStatus(user._id, user.isActive)}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
                               user.isActive
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                : 'bg-red-500/20 text-red-300 border-red-500/30'
-                            }`}>
-                              {user.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-4 sm:px-5 py-4 text-sm">{user.enrollments?.length || 0}</td>
-                          <td className="px-4 sm:px-5 py-4 text-sm text-white/45 whitespace-nowrap">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 sm:px-5 py-4 whitespace-nowrap">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedUser(user)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30"
-                              >
-                                Details
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleToggleUserStatus(user._id, user.isActive)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${
-                                  user.isActive
-                                    ? 'bg-red-500/15 text-red-300 border-red-500/30'
-                                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                                }`}
-                              >
-                                {user.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{user.enrollments?.length || 0}</td>
+                        <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-400">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUser(user)}
+                            className="rounded-lg bg-[#12433f] px-3 py-2 text-sm font-medium text-white"
+                          >
+                            Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
               {totalPages > 1 && (
-                <div className="px-5 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <p className="text-sm text-white/45">
+                <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4">
+                  <p className="text-sm text-slate-400">
                     Page {currentPage} of {totalPages}
                   </p>
                   <div className="flex gap-2">
@@ -1107,15 +1363,15 @@ export default function AdminDashboard() {
                       type="button"
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-40"
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40"
                     >
-                      Previous
+                      Prev
                     </button>
                     <button
                       type="button"
                       disabled={currentPage === totalPages}
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className="px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 disabled:opacity-40"
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40"
                     >
                       Next
                     </button>
@@ -1127,14 +1383,12 @@ export default function AdminDashboard() {
 
           {/* Enrollments */}
           {activeTab === 'enrollments' && (
-            <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
-              <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <h3 className="text-xl font-bold">Enroll Courses</h3>
-                <p className="text-sm text-white/50 mt-1">
-                  Student enrollment form details by course
-                </p>
+            <section className={`${cardClass} overflow-hidden`}>
+              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+                <h3 className="text-xl font-bold text-slate-800">Enroll Courses</h3>
+                <p className="mt-1 text-sm text-slate-500">Student enrollment form details by course</p>
               </div>
-              <div className="p-5 sm:p-6 space-y-5">
+              <div className="space-y-5 p-5 sm:p-6">
                 {(() => {
                   type EnrollmentStudent = {
                     _id: string;
@@ -1172,75 +1426,62 @@ export default function AdminDashboard() {
                       });
                     });
                   });
-                  const list = Object.values(map).sort((a, b) =>
-                    a.courseTitle.localeCompare(b.courseTitle)
-                  );
+                  const list = Object.values(map).sort((a, b) => a.courseTitle.localeCompare(b.courseTitle));
                   if (list.length === 0) {
-                    return <div className="py-12 text-center text-white/45">No enrollments yet.</div>;
+                    return <div className="py-12 text-center text-slate-400">No enrollments yet.</div>;
                   }
                   return list.map((course) => (
-                    <div key={course.courseId} className="rounded-xl border border-white/10 overflow-hidden">
-                      <div className="px-4 sm:px-5 py-4 bg-white/[0.03] flex items-center justify-between gap-3">
+                    <div key={course.courseId} className="overflow-hidden rounded-2xl border border-slate-200">
+                      <div className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-4 sm:px-5">
                         <div>
-                          <h4 className="font-semibold">{course.courseTitle}</h4>
-                          <p className="text-xs text-white/40 mt-0.5">Course ID: {course.courseId}</p>
+                          <h4 className="font-semibold text-slate-800">{course.courseTitle}</h4>
+                          <p className="mt-0.5 text-xs text-slate-400">Course ID: {course.courseId}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-emerald-300">{course.students.length}</p>
-                          <p className="text-xs text-white/40">enrolled</p>
+                          <p className="text-xl font-bold text-[#12433f]">{course.students.length}</p>
+                          <p className="text-xs text-slate-400">enrolled</p>
                         </div>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full">
-                          <thead className="bg-white/[0.02]">
+                          <thead>
                             <tr>
-                              {['Student', 'Age', 'Education', 'Phone', 'Country', 'Notes', 'Date'].map(
-                                (h) => (
-                                  <th
-                                    key={h}
-                                    className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-white/50"
-                                  >
-                                    {h}
-                                  </th>
-                                )
-                              )}
+                              {['Student', 'Age', 'Education', 'Phone', 'Country', 'Notes', 'Date'].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
+                                >
+                                  {h}
+                                </th>
+                              ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/8">
+                          <tbody className="divide-y divide-slate-100">
                             {course.students.map((s) => (
-                              <tr key={s._id} className="hover:bg-white/[0.03]">
+                              <tr key={s._id}>
                                 <td className="px-4 py-3.5">
-                                  <p className="font-medium">{s.name}</p>
-                                  <p className="text-sm text-white/50">{s.email}</p>
+                                  <p className="font-medium text-slate-800">{s.name}</p>
+                                  <p className="text-sm text-slate-400">{s.email}</p>
                                 </td>
-                                <td className="px-4 py-3.5 text-sm text-white/80">
-                                  {s.age ?? '—'}
-                                </td>
-                                <td className="px-4 py-3.5 text-sm text-white/80 max-w-[160px]">
+                                <td className="px-4 py-3.5 text-sm text-slate-600">{s.age ?? '—'}</td>
+                                <td className="max-w-[160px] px-4 py-3.5 text-sm text-slate-600">
                                   <span className="line-clamp-2">{s.education || '—'}</span>
                                 </td>
-                                <td className="px-4 py-3.5 text-sm whitespace-nowrap">
+                                <td className="whitespace-nowrap px-4 py-3.5 text-sm">
                                   {s.enrollPhone || s.phone ? (
-                                    <a
-                                      href={`tel:${s.enrollPhone || s.phone}`}
-                                      className="text-emerald-300 hover:underline"
-                                    >
+                                    <a href={`tel:${s.enrollPhone || s.phone}`} className="text-[#12433f] hover:underline">
                                       {s.enrollPhone || s.phone}
                                     </a>
                                   ) : (
                                     '—'
                                   )}
                                 </td>
-                                <td className="px-4 py-3.5 text-sm text-white/70">
-                                  {s.country || '—'}
-                                </td>
-                                <td className="px-4 py-3.5 text-sm text-white/60 max-w-[180px]">
+                                <td className="px-4 py-3.5 text-sm text-slate-500">{s.country || '—'}</td>
+                                <td className="max-w-[180px] px-4 py-3.5 text-sm text-slate-500">
                                   <span className="line-clamp-2">{s.notes || '—'}</span>
                                 </td>
-                                <td className="px-4 py-3.5 text-xs text-white/40 whitespace-nowrap">
-                                  {s.enrolledAt
-                                    ? new Date(s.enrolledAt).toLocaleDateString()
-                                    : '—'}
+                                <td className="whitespace-nowrap px-4 py-3.5 text-xs text-slate-400">
+                                  {s.enrolledAt ? new Date(s.enrolledAt).toLocaleDateString() : '—'}
                                 </td>
                               </tr>
                             ))}
@@ -1257,27 +1498,34 @@ export default function AdminDashboard() {
       </div>
 
       {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70" onClick={() => setSelectedUser(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setSelectedUser(null)}>
           <div
-            className="w-full max-w-2xl bg-[#122421] border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
               <div>
-                <h3 className="text-xl font-bold">User Details</h3>
-                <p className="text-sm text-white/45 mt-0.5">{selectedUser.email}</p>
+                <h3 className="text-xl font-bold text-slate-800">User Details</h3>
+                <p className="mt-0.5 text-sm text-slate-400">{selectedUser.email}</p>
               </div>
-              <button type="button" onClick={() => setSelectedUser(null)} className="px-3 py-1.5 rounded-lg text-sm bg-white/5 border border-white/10">
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+              >
                 Close
               </button>
             </div>
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
               {[
                 ['Full Name', selectedUser.name],
                 ['Email', selectedUser.email],
                 ['Phone', selectedUser.phone || '—'],
                 ['Address', selectedUser.address || '—'],
-                ['Date of Birth', selectedUser.dateOfBirth ? new Date(selectedUser.dateOfBirth).toLocaleDateString() : '—'],
+                [
+                  'Date of Birth',
+                  selectedUser.dateOfBirth ? new Date(selectedUser.dateOfBirth).toLocaleDateString() : '—',
+                ],
                 ['Role', selectedUser.role],
                 ['Account Status', selectedUser.isActive ? 'Active' : 'Inactive'],
                 ['Email Verified', selectedUser.isEmailVerified ? 'Yes' : 'No'],
@@ -1286,34 +1534,27 @@ export default function AdminDashboard() {
                 ['Last Login', selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : '—'],
                 ['User ID', selectedUser._id],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl bg-[#0b1614] border border-white/10 p-4">
-                  <p className="text-xs uppercase tracking-wide text-white/40 mb-1">{label}</p>
-                  <p className="text-sm text-white break-words font-medium">{value}</p>
+                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className="break-words text-sm font-medium text-slate-800">{value}</p>
                 </div>
               ))}
             </div>
 
             {(selectedUser.enrollments?.length || 0) > 0 && (
               <div className="px-6 pb-6">
-                <h4 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-3">
-                  Enrollment Details
-                </h4>
+                <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Enrollment Details</h4>
                 <div className="space-y-3">
                   {selectedUser.enrollments?.map((e) => (
-                    <div
-                      key={`${e.courseId}-${e.enrolledAt}`}
-                      className="rounded-xl bg-[#0b1614] border border-white/10 p-4"
-                    >
-                      <p className="font-semibold text-emerald-300">{e.courseTitle}</p>
-                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-white/70">
+                    <div key={`${e.courseId}-${e.enrolledAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="font-semibold text-[#12433f]">{e.courseTitle}</p>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-slate-600 sm:grid-cols-4">
                         <p>Age: {e.age ?? '—'}</p>
                         <p>Education: {e.education || '—'}</p>
                         <p>Phone: {e.phone || selectedUser.phone || '—'}</p>
                         <p>Country: {e.country || '—'}</p>
                       </div>
-                      {e.notes && (
-                        <p className="mt-2 text-sm text-white/55">Notes: {e.notes}</p>
-                      )}
+                      {e.notes && <p className="mt-2 text-sm text-slate-500">Notes: {e.notes}</p>}
                     </div>
                   ))}
                 </div>
