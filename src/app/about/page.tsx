@@ -4,40 +4,6 @@ import Footer from '../components/Footer';
 import Link from 'next/link';
 
 export default function AboutPage() {
-  const instructors = [
-    {
-      name: "Sheikh Ahmed Hassan",
-      position: "Teacher",
-      image: "/images/resources/team_1_1.jpg"
-    },
-    {
-      name: "Ustadha Fatima Zahes",
-      position: "Lead Teacher",
-      image: "/images/resources/team_1_2.jpg"
-    },
-    {
-      name: "Dr. Omar Abdullah",
-      position: "Education Assistant",
-      image: "/images/resources/team_1_3.jpg"
-    },
-    {
-      name: "Ustadha Aisha Rahman",
-      position: "Teacher",
-      image: "/images/resources/team_1_4.jpg"
-    },
-    {
-      name: "Sheikh Ibrahim Ali",
-      position: "Lead Teacher",
-      image: "/images/resources/team_1_1.jpg"
-    },
-    {
-      name: "Ustadha Khadija Ahmed",
-      position: "Education Assistant",
-      image: "/images/resources/team_1_2.jpg"
-    }
-  ];
-
-
   return (
     <>
       <Header />
@@ -155,38 +121,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-    
-
-        {/* Meet Our Instructors */}
-        <section className="py-12 sm:py-16 lg:py-20 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="mb-8 sm:mb-12 lg:mb-16">
-              <div className="text-secondary-600 font-medium mb-2 text-sm sm:text-base">Course Instructors</div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-800 leading-tight">
-                Meet our Class Instructors
-              </h2>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 lg:gap-8">
-              {instructors.map((instructor, index) => (
-                <div key={index} className="text-center">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto mb-3 sm:mb-4 rounded-full overflow-hidden shadow-lg">
-                    <img 
-                      src={instructor.image} 
-                      alt={instructor.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <h3 className="font-bold text-gray-800 mb-1 text-xs sm:text-sm lg:text-base">{instructor.name}</h3>
-                  <p className="text-gray-600 text-xs sm:text-sm">{instructor.position}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-       
 
         {/* Statistics Section */}
         {/* <section className="py-12 sm:py-16 lg:py-20 bg-white">
