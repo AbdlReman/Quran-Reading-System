@@ -2,7 +2,6 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 
 interface EnrollButtonProps {
   courseId: number;
@@ -56,7 +55,6 @@ export default function EnrollButton({
   variant = 'primary',
 }: EnrollButtonProps) {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const titleId = useId();
   const isLoggedIn = status === 'authenticated' && Boolean(session?.user);
 
@@ -195,9 +193,8 @@ export default function EnrollButton({
 
       if (res.ok) {
         if (isLoggedIn) setEnrolled(true);
-        setMessage(data.message || 'Enrolled successfully');
+        setMessage(data.message || 'Submitted successfully. Our team will contact you soon.');
         handleClose();
-        router.push(`/payment-method?course=${encodeURIComponent(courseTitle || String(courseId))}`);
       } else if ((data.message || '').toLowerCase().includes('already')) {
         setEnrolled(true);
         setMessage('Already enrolled');
@@ -274,7 +271,7 @@ export default function EnrollButton({
                     Student Details
                   </h3>
                   <p className="mt-1 text-sm text-white/70">
-                    {courseTitle || 'Complete details to continue enrollment'}
+                    {courseTitle || 'Fill student details and submit'}
                   </p>
                 </div>
                 <button
@@ -457,7 +454,7 @@ export default function EnrollButton({
                   className="rounded-xl px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-70"
                   style={{ background: '#12433f' }}
                 >
-                  {loading ? 'Submitting...' : 'Continue to Payment'}
+                  {loading ? 'Submitting...' : 'Submit Enrollment'}
                 </button>
               </div>
             </form>
