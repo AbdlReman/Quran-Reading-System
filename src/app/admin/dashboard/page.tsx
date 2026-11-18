@@ -256,6 +256,13 @@ export default function AdminDashboard() {
   const unreadCount = messages.filter((m) => m.status === 'new').length;
   const newLeadsCount = leads.filter((l) => l.status === 'new').length;
   const newTrialCount = trialLeads.filter((t) => t.status === 'new').length;
+  const totalEnrollments = users.reduce((sum, u) => sum + (u.enrollments?.length || 0), 0);
+  const recentMessages = [...messages]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+  const recentTrials = [...trialLeads]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
   const filteredTrialLeads = useMemo(() => {
     const q = trialSearch.trim().toLowerCase();
@@ -343,14 +350,23 @@ export default function AdminDashboard() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-  const navItems: Array<{ key: TabKey; label: string; badge?: number }> = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'messages', label: 'Messages', badge: unreadCount },
-    { key: 'leads', label: 'Newsletter Leads', badge: newLeadsCount },
-    { key: 'trials', label: 'Free Trial Enrollment', badge: newTrialCount },
-    { key: 'users', label: 'Users' },
-    { key: 'enrollments', label: 'Enroll Courses' },
+  const navItems: Array<{ key: TabKey; label: string; badge?: number; icon: string }> = [
+    { key: 'overview', label: 'Overview', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4' },
+    { key: 'messages', label: 'Messages', badge: unreadCount, icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+    { key: 'leads', label: 'Newsletter Leads', badge: newLeadsCount, icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2' },
+    { key: 'trials', label: 'Free Trial Enrollment', badge: newTrialCount, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { key: 'users', label: 'Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197' },
+    { key: 'enrollments', label: 'Enroll Courses', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
   ];
+
+  const tabTitles: Record<TabKey, string> = {
+    overview: 'Overview',
+    messages: 'Messages',
+    leads: 'Newsletter Leads',
+    trials: 'Free Trial Enrollment',
+    users: 'Users',
+    enrollments: 'Enroll Courses',
+  };
 
   const selectTab = (tab: TabKey) => {
     setActiveTab(tab);
@@ -359,8 +375,11 @@ export default function AdminDashboard() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-[#0b1614] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500" />
+      <div className="min-h-screen bg-[#071210] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-11 w-11 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400" />
+          <p className="text-sm text-white/50">Loading admin panel...</p>
+        </div>
       </div>
     );
   }
@@ -370,55 +389,79 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1614] text-white flex">
+    <div className="min-h-screen bg-[#071210] text-white">
       {sidebarOpen && (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-[2px] lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Left Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 z-40 h-screen w-72 bg-[#10201d] border-r border-white/10 flex flex-col transition-transform duration-200 ${
+        className={`fixed top-0 left-0 z-40 flex h-screen w-[17.5rem] flex-col border-r border-white/[0.08] bg-[#0c1a17] transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="px-5 py-6 border-b border-white/10">
-          <p className="text-xs uppercase tracking-[0.14em] text-[#ae9143] font-semibold">Admin Panel</p>
-          <h1 className="text-xl font-bold mt-1">Quran Reading System</h1>
-          <p className="text-sm text-white/50 mt-1 truncate">{session.user.email}</p>
+        <div className="border-b border-white/[0.08] px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1a5c55] to-[#0e3733] text-sm font-bold text-[#d4b86a] shadow-lg shadow-emerald-950/40">
+              QRS
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c4a35a]">Admin Panel</p>
+              <h1 className="truncate text-[15px] font-bold leading-tight">Quran Reading System</h1>
+            </div>
+          </div>
+          <p className="mt-3 truncate rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-white/45">
+            {session.user.email}
+          </p>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => selectTab(item.key)}
-              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeTab === item.key
-                  ? 'bg-[#12433f] text-white'
-                  : 'text-white/70 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <span>{item.label}</span>
-              {typeof item.badge === 'number' && item.badge > 0 && (
-                <span className="min-w-6 h-6 px-1.5 rounded-full bg-[#ae9143] text-[#12433f] text-xs font-bold flex items-center justify-center">
-                  {item.badge}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {navItems.map((item) => {
+            const active = activeTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => selectTab(item.key)}
+                className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                  active
+                    ? 'bg-[#144842] text-white shadow-sm shadow-black/20'
+                    : 'text-white/65 hover:bg-white/[0.04] hover:text-white'
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[#c4a35a]" />
+                )}
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    active ? 'bg-white/10 text-[#d4b86a]' : 'bg-white/[0.04] text-white/50 group-hover:text-white/80'
+                  }`}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                  </svg>
                 </span>
-              )}
-            </button>
-          ))}
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                {typeof item.badge === 'number' && item.badge > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#c4a35a] px-1.5 text-[11px] font-bold text-[#0c1a17]">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="border-t border-white/[0.08] p-4">
           <button
             type="button"
             onClick={() => signOut()}
-            className="w-full px-4 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 text-sm font-semibold"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
           >
             Sign Out
           </button>
@@ -426,40 +469,163 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main */}
-      <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-20 bg-[#0b1614]/90 backdrop-blur border-b border-white/10 px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="lg:hidden w-10 h-10 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold capitalize">{activeTab}</h2>
-              <p className="text-xs text-white/45">Manage academy data and inquiries</p>
+      <div className="min-h-screen lg:pl-[17.5rem]">
+        <header className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#071210]/85 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open menu"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div>
+                <h2 className="text-lg font-bold sm:text-xl">{tabTitles[activeTab]}</h2>
+                <p className="text-xs text-white/45">
+                  Manage academy data, leads, and enrollments
+                </p>
+              </div>
+            </div>
+            <div className="hidden items-center gap-2 sm:flex">
+              <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                Live admin
+              </span>
             </div>
           </div>
         </header>
 
-        <main className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
           {activeTab === 'overview' && (
-            <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {[
-                { label: 'Total Users', value: users.length },
-                { label: 'Unread Messages', value: unreadCount },
-                { label: 'New Newsletter Leads', value: newLeadsCount },
-                { label: 'New Trial Requests', value: newTrialCount },
-              ].map((card) => (
-                <div key={card.label} className="rounded-2xl border border-white/10 bg-[#122421] p-5">
-                  <p className="text-sm text-white/50">{card.label}</p>
-                  <p className="text-3xl font-bold mt-2 text-white">{card.value}</p>
+            <section className="space-y-6">
+              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#123832] via-[#0e2925] to-[#0a1c19] p-6 sm:p-7">
+                <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#c4a35a]/10 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-12 left-20 h-32 w-32 rounded-full bg-emerald-400/10 blur-3xl" />
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#c4a35a]">Dashboard</p>
+                <h3 className="mt-1 text-2xl font-bold sm:text-3xl">Assalamualaikum, Admin</h3>
+                <p className="mt-2 max-w-xl text-sm text-white/55">
+                  Review new inquiries, trial requests, and course enrollments from one place.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  { key: 'users' as TabKey, label: 'Total Users', value: users.length, accent: 'text-sky-300', bg: 'from-sky-500/15 to-transparent' },
+                  { key: 'messages' as TabKey, label: 'Unread Messages', value: unreadCount, accent: 'text-emerald-300', bg: 'from-emerald-500/15 to-transparent' },
+                  { key: 'leads' as TabKey, label: 'Newsletter Leads', value: newLeadsCount, accent: 'text-amber-300', bg: 'from-amber-500/15 to-transparent' },
+                  { key: 'trials' as TabKey, label: 'Trial Requests', value: newTrialCount, accent: 'text-teal-300', bg: 'from-teal-500/15 to-transparent' },
+                  { key: 'enrollments' as TabKey, label: 'Enrollments', value: totalEnrollments, accent: 'text-[#d4b86a]', bg: 'from-[#c4a35a]/15 to-transparent' },
+                  { key: 'messages' as TabKey, label: 'All Messages', value: messages.length, accent: 'text-white', bg: 'from-white/10 to-transparent' },
+                ].map((card) => (
+                  <button
+                    key={card.label}
+                    type="button"
+                    onClick={() => selectTab(card.key)}
+                    className={`rounded-2xl border border-white/[0.08] bg-gradient-to-b ${card.bg} bg-[#0f221e] p-5 text-left transition hover:border-white/20 hover:bg-[#132824]`}
+                  >
+                    <p className="text-xs font-medium uppercase tracking-wide text-white/45">{card.label}</p>
+                    <p className={`mt-3 text-3xl font-bold tabular-nums ${card.accent}`}>{card.value}</p>
+                    <p className="mt-2 text-xs text-white/35">Open section →</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] p-5 lg:col-span-1">
+                  <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Quick actions</h4>
+                  <div className="mt-4 space-y-2">
+                    {[
+                      { key: 'messages' as TabKey, label: 'Review messages', hint: `${unreadCount} unread` },
+                      { key: 'trials' as TabKey, label: 'Free trial leads', hint: `${newTrialCount} new` },
+                      { key: 'enrollments' as TabKey, label: 'Course enrollments', hint: `${totalEnrollments} total` },
+                      { key: 'users' as TabKey, label: 'Manage users', hint: `${users.length} accounts` },
+                    ].map((action) => (
+                      <button
+                        key={action.key + action.label}
+                        type="button"
+                        onClick={() => selectTab(action.key)}
+                        className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.03] px-3.5 py-3 text-left transition hover:border-emerald-500/30 hover:bg-emerald-500/10"
+                      >
+                        <span className="text-sm font-medium">{action.label}</span>
+                        <span className="text-xs text-white/40">{action.hint}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))}
+
+                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] overflow-hidden lg:col-span-1">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+                    <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Recent messages</h4>
+                    <button type="button" onClick={() => selectTab('messages')} className="text-xs text-emerald-300 hover:underline">
+                      View all
+                    </button>
+                  </div>
+                  <div className="divide-y divide-white/[0.06]">
+                    {recentMessages.length === 0 ? (
+                      <p className="px-5 py-8 text-center text-sm text-white/40">No messages yet</p>
+                    ) : (
+                      recentMessages.map((msg) => (
+                        <button
+                          key={msg._id}
+                          type="button"
+                          onClick={() => selectTab('messages')}
+                          className="flex w-full flex-col gap-1 px-5 py-3.5 text-left hover:bg-white/[0.03]"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-sm font-medium">
+                              {msg.firstName} {msg.lastName}
+                            </p>
+                            {msg.status === 'new' && (
+                              <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                                New
+                              </span>
+                            )}
+                          </div>
+                          <p className="truncate text-xs text-white/45">{msg.subject}</p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/[0.08] bg-[#0f221e] overflow-hidden lg:col-span-1">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+                    <h4 className="text-sm font-bold uppercase tracking-wide text-white/50">Recent trials</h4>
+                    <button type="button" onClick={() => selectTab('trials')} className="text-xs text-emerald-300 hover:underline">
+                      View all
+                    </button>
+                  </div>
+                  <div className="divide-y divide-white/[0.06]">
+                    {recentTrials.length === 0 ? (
+                      <p className="px-5 py-8 text-center text-sm text-white/40">No trial leads yet</p>
+                    ) : (
+                      recentTrials.map((lead) => (
+                        <button
+                          key={lead._id}
+                          type="button"
+                          onClick={() => selectTab('trials')}
+                          className="flex w-full flex-col gap-1 px-5 py-3.5 text-left hover:bg-white/[0.03]"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-sm font-medium">{lead.name}</p>
+                            {lead.status === 'new' && (
+                              <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                                New
+                              </span>
+                            )}
+                          </div>
+                          <p className="truncate text-xs text-white/45">
+                            {lead.course || 'Trial'} · {lead.phone}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
             </section>
           )}
 
