@@ -6,11 +6,11 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const bankDetails = [
-  { label: 'Bank', value: 'Muslim Commercial Bank (MCB)', copyValue: 'Muslim Commercial Bank (MCB)' },
-  { label: 'Account Number', value: '0493 9163 1100 1051', copyValue: '0493916311001051', highlight: true },
-  { label: 'Branch Code', value: '0473', copyValue: '0473' },
+  { label: 'Bank', value: 'Allied Bank', copyValue: 'Allied Bank' },
+  { label: 'IBAN', value: 'PK79ABPA0010070324910013', copyValue: 'PK79ABPA0010070324910013', highlight: true },
+  { label: 'Branch Code', value: '0649', copyValue: '0649' },
   { label: 'Account Title', value: 'Yasir Farooq', copyValue: 'Yasir Farooq' },
-  { label: 'Branch / Area', value: 'Murree Mall Road, Punjab, Pakistan', copyValue: 'Murree Mall Road, Punjab, Pakistan' },
+  { label: 'Branch / Area', value: 'Rawalpindi, Pakistan', copyValue: 'Rawalpindi, Pakistan' },
 ];
 
 const steps = [
@@ -247,7 +247,7 @@ export default function PaymentMethodPage() {
                     <div>
                       <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#fff' }}>Bank Details</h2>
                       <p style={{ margin: '0.15rem 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>
-                        MCB — Muslim Commercial Bank
+                        Allied Bank — IBAN Transfer
                       </p>
                     </div>
                   </div>
@@ -428,7 +428,7 @@ export default function PaymentMethodPage() {
                         <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8a9391' }}>
                           Managers
                         </p>
-                        <p style={{ margin: '0.15rem 0 0', fontWeight: 600, color: '#1f2937' }}>Sir Rizwan, Sir Yasir</p>
+                        <p style={{ margin: '0.15rem 0 0', fontWeight: 600, color: '#1f2937' }}>Yasir Farooq</p>
                       </div>
                     </div>
 
@@ -464,11 +464,46 @@ export default function PaymentMethodPage() {
                         <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8a9391' }}>
                           Mobile
                         </p>
-                        <a href="tel:+923145683317" style={{ display: 'block', fontWeight: 600, color: 'var(--primary-color)', textDecoration: 'none' }}>
-                          0314 5683317
-                        </a>
                         <a href="tel:+923215507499" style={{ display: 'block', fontWeight: 600, color: 'var(--primary-color)', textDecoration: 'none' }}>
-                          0321 5507499
+                          0092 321 5507499
+                        </a>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '0.85rem',
+                        alignItems: 'center',
+                        padding: '0.85rem',
+                        borderRadius: '0.85rem',
+                        background: '#f8faf9',
+                        border: '1px solid #eef2f1',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '2.5rem',
+                          height: '2.5rem',
+                          borderRadius: '0.7rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(18, 67, 63, 0.08)',
+                          color: 'var(--primary-color)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#8a9391' }}>
+                          Email
+                        </p>
+                        <a href="mailto:M.yasirfarooq@gmail.com" style={{ display: 'block', fontWeight: 600, color: 'var(--primary-color)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                          M.yasirfarooq@gmail.com
                         </a>
                       </div>
                     </div>
