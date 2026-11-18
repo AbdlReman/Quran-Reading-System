@@ -14,7 +14,16 @@ interface User {
   createdAt: string;
   lastLogin?: string;
   dateOfBirth?: string;
-  enrollments?: Array<{ courseId: number; courseTitle: string; enrolledAt: string }>;
+  enrollments?: Array<{
+    courseId: number;
+    courseTitle: string;
+    enrolledAt: string;
+    age?: number;
+    education?: string;
+    phone?: string;
+    country?: string;
+    notes?: string;
+  }>;
   phone?: string;
   address?: string;
 }
@@ -340,7 +349,7 @@ export default function AdminDashboard() {
     { key: 'leads', label: 'Newsletter Leads', badge: newLeadsCount },
     { key: 'trials', label: 'Free Trial Enrollment', badge: newTrialCount },
     { key: 'users', label: 'Users' },
-    { key: 'enrollments', label: 'Enrollments' },
+    { key: 'enrollments', label: 'Enroll Courses' },
   ];
 
   const selectTab = (tab: TabKey) => {
@@ -954,20 +963,52 @@ export default function AdminDashboard() {
           {activeTab === 'enrollments' && (
             <section className="rounded-2xl border border-white/10 bg-[#122421] overflow-hidden">
               <div className="px-5 sm:px-6 py-5 border-b border-white/10">
-                <h3 className="text-xl font-bold">Enrollments by Course</h3>
-                <p className="text-sm text-white/50 mt-1">Students grouped by enrolled course</p>
+                <h3 className="text-xl font-bold">Enroll Courses</h3>
+                <p className="text-sm text-white/50 mt-1">
+                  Student enrollment form details by course
+                </p>
               </div>
               <div className="p-5 sm:p-6 space-y-5">
                 {(() => {
-                  const map: Record<string, { courseId: number; courseTitle: string; students: Array<{ _id: string; name: string; email: string; phone?: string; enrolledAt?: string }> }> = {};
+                  type EnrollmentStudent = {
+                    _id: string;
+                    name: string;
+                    email: string;
+                    phone?: string;
+                    enrolledAt?: string;
+                    age?: number;
+                    education?: string;
+                    enrollPhone?: string;
+                    country?: string;
+                    notes?: string;
+                  };
+                  const map: Record<
+                    string,
+                    { courseId: number; courseTitle: string; students: EnrollmentStudent[] }
+                  > = {};
                   users.forEach((u) => {
                     (u.enrollments || []).forEach((e) => {
                       const key = String(e.courseId);
-                      if (!map[key]) map[key] = { courseId: e.courseId, courseTitle: e.courseTitle, students: [] };
-                      map[key].students.push({ _id: u._id, name: u.name, email: u.email, phone: u.phone, enrolledAt: e.enrolledAt });
+                      if (!map[key]) {
+                        map[key] = { courseId: e.courseId, courseTitle: e.courseTitle, students: [] };
+                      }
+                      map[key].students.push({
+                        _id: `${u._id}-${e.courseId}`,
+                        name: u.name,
+                        email: u.email,
+                        phone: u.phone,
+                        enrolledAt: e.enrolledAt,
+                        age: e.age,
+                        education: e.education,
+                        enrollPhone: e.phone,
+                        country: e.country,
+                        notes: e.notes,
+                      });
                     });
                   });
-                  const list = Object.values(map).sort((a, b) => a.courseTitle.localeCompare(b.courseTitle));
+                  const list = Object.values(map).sort((a, b) =>
+                    a.courseTitle.localeCompare(b.courseTitle)
+                  );
                   if (list.length === 0) {
                     return <div className="py-12 text-center text-white/45">No enrollments yet.</div>;
                   }
@@ -983,21 +1024,62 @@ export default function AdminDashboard() {
                           <p className="text-xs text-white/40">enrolled</p>
                         </div>
                       </div>
-                      <div className="divide-y divide-white/8">
-                        {course.students.map((s) => (
-                          <div key={s._id} className="px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <p className="font-medium">{s.name}</p>
-                              <p className="text-sm text-white/50">{s.email}</p>
-                              {s.phone && <p className="text-sm text-emerald-300 mt-0.5">{s.phone}</p>}
-                            </div>
-                            {s.enrolledAt && (
-                              <p className="text-xs text-white/40">
-                                Enrolled {new Date(s.enrolledAt).toLocaleDateString()}
-                              </p>
-                            )}
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead className="bg-white/[0.02]">
+                            <tr>
+                              {['Student', 'Age', 'Education', 'Phone', 'Country', 'Notes', 'Date'].map(
+                                (h) => (
+                                  <th
+                                    key={h}
+                                    className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-white/50"
+                                  >
+                                    {h}
+                                  </th>
+                                )
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/8">
+                            {course.students.map((s) => (
+                              <tr key={s._id} className="hover:bg-white/[0.03]">
+                                <td className="px-4 py-3.5">
+                                  <p className="font-medium">{s.name}</p>
+                                  <p className="text-sm text-white/50">{s.email}</p>
+                                </td>
+                                <td className="px-4 py-3.5 text-sm text-white/80">
+                                  {s.age ?? '—'}
+                                </td>
+                                <td className="px-4 py-3.5 text-sm text-white/80 max-w-[160px]">
+                                  <span className="line-clamp-2">{s.education || '—'}</span>
+                                </td>
+                                <td className="px-4 py-3.5 text-sm whitespace-nowrap">
+                                  {s.enrollPhone || s.phone ? (
+                                    <a
+                                      href={`tel:${s.enrollPhone || s.phone}`}
+                                      className="text-emerald-300 hover:underline"
+                                    >
+                                      {s.enrollPhone || s.phone}
+                                    </a>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="px-4 py-3.5 text-sm text-white/70">
+                                  {s.country || '—'}
+                                </td>
+                                <td className="px-4 py-3.5 text-sm text-white/60 max-w-[180px]">
+                                  <span className="line-clamp-2">{s.notes || '—'}</span>
+                                </td>
+                                <td className="px-4 py-3.5 text-xs text-white/40 whitespace-nowrap">
+                                  {s.enrolledAt
+                                    ? new Date(s.enrolledAt).toLocaleDateString()
+                                    : '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   ));
@@ -1044,6 +1126,33 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+
+            {(selectedUser.enrollments?.length || 0) > 0 && (
+              <div className="px-6 pb-6">
+                <h4 className="text-sm font-bold uppercase tracking-wide text-white/50 mb-3">
+                  Enrollment Details
+                </h4>
+                <div className="space-y-3">
+                  {selectedUser.enrollments?.map((e) => (
+                    <div
+                      key={`${e.courseId}-${e.enrolledAt}`}
+                      className="rounded-xl bg-[#0b1614] border border-white/10 p-4"
+                    >
+                      <p className="font-semibold text-emerald-300">{e.courseTitle}</p>
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-white/70">
+                        <p>Age: {e.age ?? '—'}</p>
+                        <p>Education: {e.education || '—'}</p>
+                        <p>Phone: {e.phone || selectedUser.phone || '—'}</p>
+                        <p>Country: {e.country || '—'}</p>
+                      </div>
+                      {e.notes && (
+                        <p className="mt-2 text-sm text-white/55">Notes: {e.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

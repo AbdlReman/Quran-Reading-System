@@ -166,7 +166,7 @@ export default async function CourseDetailsPage({ params }: { params: Promise<{ 
                        <div className="text-sm text-gray-600">Interactive online sessions</div>
                      </div>
                      
-                     <EnrollButton courseId={course.id} />
+                     <EnrollButton courseId={course.id} courseTitle={course.title} />
                    </div>
 
                    

@@ -23,6 +23,10 @@ export interface IUser extends mongoose.Document {
     courseId: number;
     courseTitle: string;
     enrolledAt: Date;
+    age?: number;
+    education?: string;
+    phone?: string;
+    country?: string;
     notes?: string;
   }>;
   createdAt: Date;
@@ -136,6 +140,10 @@ const userSchema = new mongoose.Schema<IUser>({
         courseId: { type: Number, required: true },
         courseTitle: { type: String, required: true },
         enrolledAt: { type: Date, default: Date.now },
+        age: { type: Number, min: 3, max: 100 },
+        education: { type: String, trim: true, default: '' },
+        phone: { type: String, trim: true, default: '' },
+        country: { type: String, trim: true, default: '' },
         notes: { type: String, default: '' },
       },
       { _id: false }
