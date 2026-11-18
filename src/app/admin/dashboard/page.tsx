@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import './admin-ui.css';
 
 interface User {
   _id: string;
@@ -620,16 +621,12 @@ export default function AdminDashboard() {
     .slice(0, 2)
     .toUpperCase();
 
-  const inputClass =
-    'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-[#12433f]/40 focus:ring-2 focus:ring-[#12433f]/10';
-  const cardClass = 'rounded-[1.35rem] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,40,35,0.05)]';
-
   if (status === 'loading' || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#eef2f1]">
+      <div className="admin-dashboard flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-11 w-11 animate-spin rounded-full border-2 border-[#12433f]/20 border-t-[#12433f]" />
-          <p className="text-sm text-slate-500">Loading dashboard...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#12433f]/20 border-t-[#12433f]" />
+          <p className="text-sm text-[var(--ad-muted)]">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -649,7 +646,7 @@ export default function AdminDashboard() {
     .join(' ');
 
   return (
-    <div className="min-h-screen bg-[#eef2f1] text-slate-800">
+    <div className="admin-dashboard min-h-screen">
       {sidebarOpen && (
         <button
           type="button"
@@ -659,14 +656,13 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen w-[15.5rem] flex-col bg-[#12433f] px-4 py-6 text-white transition-transform duration-200 ${
+        className={`ad-sidebar fixed left-0 top-0 z-40 flex h-screen flex-col text-white transition-transform duration-200 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-bold text-[#f0d78c]">
+        <div className="ad-sidebar-brand">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/10 text-sm font-bold text-[var(--ad-gold-soft)]">
             QRS
           </div>
           <div>
@@ -675,7 +671,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1.5 overflow-y-auto">
+        <nav className="ad-nav flex-1 overflow-y-auto">
           {navItems.map((item) => {
             const active = activeTab === item.key;
             return (
@@ -683,17 +679,15 @@ export default function AdminDashboard() {
                 key={item.key}
                 type="button"
                 onClick={() => selectTab(item.key)}
-                className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium transition ${
-                  active ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/8 hover:text-white'
+                className={`ad-nav-item ${
+                  active ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <span className={active ? 'text-[#f0d78c]' : 'text-white/60'}>{navIcons[item.key]}</span>
+                <span className={active ? 'text-[var(--ad-gold-soft)]' : 'text-white/60'}>{navIcons[item.key]}</span>
                 <span className="flex-1 text-left">{item.label}</span>
                 {active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                 {!active && typeof item.badge === 'number' && item.badge > 0 && (
-                  <span className="rounded-full bg-[#ae9143] px-1.5 py-0.5 text-[10px] font-bold text-[#12433f]">
-                    {item.badge}
-                  </span>
+                  <span className="ad-badge bg-[var(--ad-gold)] text-[var(--ad-brand)]">{item.badge}</span>
                 )}
               </button>
             );
@@ -703,7 +697,7 @@ export default function AdminDashboard() {
         <button
           type="button"
           onClick={() => signOut()}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-[#12433f] shadow-lg shadow-black/10 transition hover:bg-[#f7f4ea]"
+          className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-semibold text-[var(--ad-brand)]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
@@ -712,195 +706,197 @@ export default function AdminDashboard() {
         </button>
       </aside>
 
-      {/* Main */}
-      <div className="min-h-screen lg:pl-[15.5rem]">
-        <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-[#eef2f1]/90 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
+      <div className="ad-main">
+        <header className="ad-topbar">
+          <button
+            type="button"
+            className="ad-icon-btn lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <div className="relative min-w-0 flex-1">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ad-muted)]"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path strokeLinecap="round" d="M20 20l-3-3" />
+            </svg>
+            <input
+              value={headerSearch}
+              onChange={(e) => {
+                setHeaderSearch(e.target.value);
+                if (activeTab === 'messages') setMessageSearch(e.target.value);
+                if (activeTab === 'leads') setLeadSearch(e.target.value);
+                if (activeTab === 'trials') setTrialSearch(e.target.value);
+                if (activeTab === 'users') setSearchTerm(e.target.value);
+              }}
+              placeholder="Search users, messages, leads..."
+              className="ad-search"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
+              onClick={() => selectTab('messages')}
+              className="ad-icon-btn relative"
+              aria-label="Notifications"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
+              {unreadCount + newTrialCount > 0 && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--ad-gold)]" />
+              )}
             </button>
-
-            <div className="relative min-w-0 flex-1">
-              <svg
-                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path strokeLinecap="round" d="M20 20l-3-3" />
-              </svg>
-              <input
-                value={headerSearch}
-                onChange={(e) => {
-                  setHeaderSearch(e.target.value);
-                  if (activeTab === 'messages') setMessageSearch(e.target.value);
-                  if (activeTab === 'leads') setLeadSearch(e.target.value);
-                  if (activeTab === 'trials') setTrialSearch(e.target.value);
-                  if (activeTab === 'users') setSearchTerm(e.target.value);
-                }}
-                placeholder="Search users, messages, leads..."
-                className="h-12 w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-[#12433f]/35 focus:ring-2 focus:ring-[#12433f]/10"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => selectTab('messages')}
-                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-[#12433f]/30"
-                aria-label="Notifications"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                {unreadCount + newTrialCount > 0 && (
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ae9143]" />
-                )}
-              </button>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#12433f] text-sm font-bold text-white shadow-md">
-                {adminInitials}
-              </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--ad-brand)] text-sm font-bold text-white">
+              {adminInitials}
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1400px] space-y-5 p-4 sm:p-6 lg:p-8">
-          {/* Overview */}
+        <main className="ad-page">
           {activeTab === 'overview' && (
-            <section className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-              <div className="space-y-5 xl:col-span-7">
-                <div className={`${cardClass} p-5 sm:p-6`}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800">Analytics</h3>
-                      <p className="mt-1 text-sm text-slate-500">Messages, trials & newsletter leads</p>
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                      Last 3 months
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-4 text-xs font-medium text-slate-500">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#12433f]" /> Messages
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#ae9143]" /> Trials
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#3d8b7a]" /> Newsletter
-                    </span>
-                  </div>
-                  <BarChart series={chartSeries} />
-                </div>
-
-                <div className={`${cardClass} p-5 sm:p-6`}>
-                  <h3 className="text-lg font-bold text-slate-800">Activity overview</h3>
-                  <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-[#f6f8f7] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Users</p>
-                          <p className="mt-1 text-3xl font-bold text-slate-800">{users.length}</p>
-                          <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-                            ↑ Active accounts
-                          </p>
-                        </div>
-                        <Sparkline points={activitySpark} color={BRAND} />
+            <section className="ad-overview">
+              <div className="ad-stack">
+                <div className="ad-card">
+                  <div className="ad-card-body">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="ad-section-title">Analytics</h3>
+                        <p className="ad-section-subtitle">Messages, trials & newsletter leads</p>
+                      </div>
+                      <div className="ad-badge border border-[var(--ad-border)] bg-[#f8faf9] text-[var(--ad-muted)]">
+                        Last 3 months
                       </div>
                     </div>
-                    <div className="rounded-2xl bg-[#f6f8f7] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Enrollments</p>
-                          <p className="mt-1 text-3xl font-bold text-slate-800">{totalEnrollments}</p>
-                          <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#ae9143]">
-                            ↑ Course signups
-                          </p>
-                        </div>
-                        <Sparkline points={enrollSpark} color={GOLD} />
-                      </div>
+                    <div className="mt-4 flex flex-wrap gap-4 text-xs font-medium text-[var(--ad-muted)]">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--ad-brand)]" /> Messages
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--ad-gold)]" /> Trials
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-[#3d8b7a]" /> Newsletter
+                      </span>
                     </div>
+                    <BarChart series={chartSeries} />
                   </div>
                 </div>
 
-                <div className={`${cardClass} p-5 sm:p-6`}>
-                  <h3 className="mb-5 text-lg font-bold text-slate-800">Message status</h3>
-                  <div className="flex flex-wrap items-center justify-around gap-6">
-                    <Donut value={unreadCount} max={Math.max(messages.length, 1)} color={BRAND} label="Unread" />
-                    <Donut value={readCount} max={Math.max(messages.length, 1)} color="#3d8b7a" label="Read" />
-                    <Donut value={repliedCount} max={Math.max(messages.length, 1)} color={GOLD} label="Replied" />
+                <div className="ad-card">
+                  <div className="ad-card-body">
+                    <h3 className="ad-section-title">Activity overview</h3>
+                    <div className="ad-grid-2 mt-4">
+                      <div className="ad-soft-box">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="ad-kpi-label">Users</p>
+                            <p className="mt-2 text-3xl font-bold text-[var(--ad-text)]">{users.length}</p>
+                            <p className="mt-2 text-xs font-semibold text-emerald-600">↑ Active accounts</p>
+                          </div>
+                          <Sparkline points={activitySpark} color={BRAND} />
+                        </div>
+                      </div>
+                      <div className="ad-soft-box">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="ad-kpi-label">Enrollments</p>
+                            <p className="mt-2 text-3xl font-bold text-[var(--ad-text)]">{totalEnrollments}</p>
+                            <p className="mt-2 text-xs font-semibold text-[var(--ad-gold)]">↑ Course signups</p>
+                          </div>
+                          <Sparkline points={enrollSpark} color={GOLD} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ad-card">
+                  <div className="ad-card-body">
+                    <h3 className="ad-section-title mb-4">Message status</h3>
+                    <div className="flex flex-wrap items-center justify-around gap-6">
+                      <Donut value={unreadCount} max={Math.max(messages.length, 1)} color={BRAND} label="Unread" />
+                      <Donut value={readCount} max={Math.max(messages.length, 1)} color="#3d8b7a" label="Read" />
+                      <Donut value={repliedCount} max={Math.max(messages.length, 1)} color={GOLD} label="Replied" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-5 xl:col-span-5">
-                <div className={`${cardClass} p-5 sm:p-6`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-bold text-slate-800">Performance</h3>
-                    <div className="flex rounded-full bg-slate-100 p-1">
-                      {([
-                        ['day', 'Day'],
-                        ['month', 'Month'],
-                        ['year', 'Year'],
-                      ] as const).map(([key, label]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setPerfRange(key)}
-                          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                            perfRange === key ? 'bg-[#12433f] text-white' : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {label}
-                        </button>
+              <div className="ad-stack">
+                <div className="ad-card">
+                  <div className="ad-card-body">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="ad-section-title">Performance</h3>
+                      <div className="flex rounded-full bg-[#f1f4f3] p-1">
+                        {([
+                          ['day', 'Day'],
+                          ['month', 'Month'],
+                          ['year', 'Year'],
+                        ] as const).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setPerfRange(key)}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                              perfRange === key
+                                ? 'bg-[var(--ad-brand)] text-white'
+                                : 'text-[var(--ad-muted)] hover:text-[var(--ad-text)]'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'Messages', value: messages.length },
+                        { label: 'Trials', value: trialLeads.length },
+                        { label: 'Leads', value: leads.length },
+                      ].map((kpi) => (
+                        <div key={kpi.label} className="ad-soft-box text-center">
+                          <p className="ad-kpi-label">{kpi.label}</p>
+                          <p className="mt-2 text-xl font-bold text-[var(--ad-text)]">{kpi.value}</p>
+                        </div>
                       ))}
                     </div>
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    {[
-                      { label: 'Messages', value: messages.length },
-                      { label: 'Trials', value: trialLeads.length },
-                      { label: 'Leads', value: leads.length },
-                    ].map((kpi) => (
-                      <div key={kpi.label} className="rounded-2xl bg-[#f6f8f7] px-3 py-3 text-center">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{kpi.label}</p>
-                        <p className="mt-1 text-xl font-bold text-slate-800">{kpi.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 overflow-hidden rounded-2xl bg-gradient-to-b from-[#e8f1ef] to-white p-3">
-                    <svg viewBox="0 0 320 100" className="h-28 w-full">
-                      <path d={`${wavePath} L320,100 L0,100 Z`} fill="rgba(18,67,63,0.12)" />
-                      <path d={wavePath} fill="none" stroke={BRAND} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <div className="mt-4 overflow-hidden rounded-[12px] bg-gradient-to-b from-[#e8f1ef] to-white p-3">
+                      <svg viewBox="0 0 320 100" className="h-28 w-full">
+                        <path d={`${wavePath} L320,100 L0,100 Z`} fill="rgba(18,67,63,0.12)" />
+                        <path d={wavePath} fill="none" stroke={BRAND} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
 
-                <div className={`${cardClass} overflow-hidden`}>
-                  <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                    <div className="p-5">
-                      <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-slate-800">Recent messages</h4>
-                        <button type="button" onClick={() => selectTab('messages')} className="text-xs font-semibold text-[#12433f]">
+                <div className="ad-card">
+                  <div className="grid grid-cols-1 divide-y divide-[var(--ad-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                    <div className="ad-card-body">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-bold text-[var(--ad-text)]">Recent messages</h4>
+                        <button type="button" onClick={() => selectTab('messages')} className="text-xs font-semibold text-[var(--ad-brand)]">
                           View
                         </button>
                       </div>
                       <div className="space-y-3">
                         {recentMessages.length === 0 ? (
-                          <p className="text-sm text-slate-400">No messages yet</p>
+                          <p className="text-sm text-[var(--ad-muted)]">No messages yet</p>
                         ) : (
                           recentMessages.map((msg, idx) => (
                             <button
@@ -909,14 +905,14 @@ export default function AdminDashboard() {
                               onClick={() => selectTab('messages')}
                               className="flex w-full items-start gap-3 text-left"
                             >
-                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#12433f]/10 text-[11px] font-bold text-[#12433f]">
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--ad-brand)]/10 text-[11px] font-bold text-[var(--ad-brand)]">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0">
-                                <span className="block truncate text-sm font-semibold text-slate-700">
+                                <span className="block truncate text-sm font-semibold text-[var(--ad-text)]">
                                   {msg.firstName} {msg.lastName}
                                 </span>
-                                <span className="block truncate text-xs text-slate-400">{msg.subject}</span>
+                                <span className="block truncate text-xs text-[var(--ad-muted)]">{msg.subject}</span>
                               </span>
                             </button>
                           ))
@@ -924,16 +920,16 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="p-5">
-                      <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-sm font-bold text-slate-800">Trial requests</h4>
-                        <button type="button" onClick={() => selectTab('trials')} className="text-xs font-semibold text-[#12433f]">
+                    <div className="ad-card-body">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <h4 className="text-sm font-bold text-[var(--ad-text)]">Trial requests</h4>
+                        <button type="button" onClick={() => selectTab('trials')} className="text-xs font-semibold text-[var(--ad-brand)]">
                           View
                         </button>
                       </div>
                       <div className="space-y-3">
                         {recentTrials.length === 0 ? (
-                          <p className="text-sm text-slate-400">No trial leads yet</p>
+                          <p className="text-sm text-[var(--ad-muted)]">No trial leads yet</p>
                         ) : (
                           recentTrials.map((lead, idx) => (
                             <button
@@ -942,12 +938,12 @@ export default function AdminDashboard() {
                               onClick={() => selectTab('trials')}
                               className="flex w-full items-start gap-3 text-left"
                             >
-                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#ae9143]/15 text-[11px] font-bold text-[#8a6f2e]">
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--ad-gold)]/15 text-[11px] font-bold text-[#8a6f2e]">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0">
-                                <span className="block truncate text-sm font-semibold text-slate-700">{lead.name}</span>
-                                <span className="block truncate text-xs text-slate-400">
+                                <span className="block truncate text-sm font-semibold text-[var(--ad-text)]">{lead.name}</span>
+                                <span className="block truncate text-xs text-[var(--ad-muted)]">
                                   {lead.course || 'Trial'} · {lead.phone}
                                 </span>
                               </span>
@@ -959,7 +955,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="ad-kpi-grid">
                   {[
                     { label: 'Unread', value: unreadCount, tab: 'messages' as TabKey },
                     { label: 'New trials', value: newTrialCount, tab: 'trials' as TabKey },
@@ -970,10 +966,10 @@ export default function AdminDashboard() {
                       key={item.label}
                       type="button"
                       onClick={() => selectTab(item.tab)}
-                      className={`${cardClass} p-4 text-left transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(15,40,35,0.08)]`}
+                      className="ad-kpi transition hover:border-[var(--ad-brand)]/30"
                     >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
-                      <p className="mt-2 text-2xl font-bold text-[#12433f]">{item.value}</p>
+                      <p className="ad-kpi-label">{item.label}</p>
+                      <p className="ad-kpi-value">{item.value}</p>
                     </button>
                   ))}
                 </div>
@@ -983,51 +979,49 @@ export default function AdminDashboard() {
 
           {/* Messages */}
           {activeTab === 'messages' && (
-            <section className={`${cardClass} overflow-hidden`}>
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Contact Messages</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {filteredMessages.length} shown · {unreadCount} unread · {messages.length} total
-                    </p>
-                  </div>
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
-                    <input
-                      type="search"
-                      value={messageSearch}
-                      onChange={(e) => setMessageSearch(e.target.value)}
-                      placeholder="Search name, email, subject..."
-                      className={inputClass}
-                    />
-                    <select
-                      value={messageStatusFilter}
-                      onChange={(e) => setMessageStatusFilter(e.target.value as typeof messageStatusFilter)}
-                      className={inputClass}
-                    >
-                      <option value="all">All status</option>
-                      <option value="unread">Unread</option>
-                      <option value="read">Read</option>
-                      <option value="replied">Replied</option>
-                    </select>
-                    <select
-                      value={messageSort}
-                      onChange={(e) => setMessageSort(e.target.value as typeof messageSort)}
-                      className={inputClass}
-                    >
-                      <option value="newest">Newest first</option>
-                      <option value="oldest">Oldest first</option>
-                    </select>
-                  </div>
+            <section className="ad-card">
+              <div className="ad-card-header">
+                <div>
+                  <h3 className="ad-card-title">Contact Messages</h3>
+                  <p className="ad-card-subtitle">
+                    {filteredMessages.length} shown · {unreadCount} unread · {messages.length} total
+                  </p>
+                </div>
+                <div className="ad-filters cols-3">
+                  <input
+                    type="search"
+                    value={messageSearch}
+                    onChange={(e) => setMessageSearch(e.target.value)}
+                    placeholder="Search name, email, subject..."
+                    className="ad-input"
+                  />
+                  <select
+                    value={messageStatusFilter}
+                    onChange={(e) => setMessageStatusFilter(e.target.value as typeof messageStatusFilter)}
+                    className="ad-select"
+                  >
+                    <option value="all">All status</option>
+                    <option value="unread">Unread</option>
+                    <option value="read">Read</option>
+                    <option value="replied">Replied</option>
+                  </select>
+                  <select
+                    value={messageSort}
+                    onChange={(e) => setMessageSort(e.target.value as typeof messageSort)}
+                    className="ad-select"
+                  >
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="divide-y divide-slate-100">
+              <div>
                 {filteredMessages.length === 0 ? (
-                  <div className="px-6 py-16 text-center text-slate-400">No messages match your filters.</div>
+                  <div className="ad-empty">No messages match your filters.</div>
                 ) : (
                   filteredMessages.map((msg) => (
-                    <div key={msg._id} className={`px-5 py-5 sm:px-6 ${msg.status === 'new' ? 'bg-emerald-50/50' : ''}`}>
+                    <div key={msg._id} className={`ad-list-row ${msg.status === 'new' ? 'bg-emerald-50/50' : ''}`}>
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -1080,7 +1074,7 @@ export default function AdminDashboard() {
                           <select
                             value={msg.status}
                             onChange={(e) => updateMessageStatus(msg._id, e.target.value as ContactMessageItem['status'])}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                            className="ad-select"
                           >
                             <option value="new">Unread</option>
                             <option value="read">Read</option>
@@ -1089,7 +1083,7 @@ export default function AdminDashboard() {
                           <button
                             type="button"
                             onClick={() => deleteMessage(msg._id)}
-                            className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600"
+                            className="ad-btn ad-btn-danger"
                           >
                             Delete
                           </button>
@@ -1104,51 +1098,47 @@ export default function AdminDashboard() {
 
           {/* Newsletter Leads */}
           {activeTab === 'leads' && (
-            <section className={`${cardClass} overflow-hidden`}>
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Newsletter Leads</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {filteredLeads.length} shown · {newLeadsCount} new · {leads.length} total
-                    </p>
-                  </div>
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[28rem]">
-                    <input
-                      type="search"
-                      value={leadSearch}
-                      onChange={(e) => setLeadSearch(e.target.value)}
-                      placeholder="Search email or source..."
-                      className={inputClass}
-                    />
-                    <select
-                      value={leadStatusFilter}
-                      onChange={(e) => setLeadStatusFilter(e.target.value as typeof leadStatusFilter)}
-                      className={inputClass}
-                    >
-                      <option value="all">All status</option>
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                    </select>
-                  </div>
+            <section className="ad-card">
+              <div className="ad-card-header">
+                <div>
+                  <h3 className="ad-card-title">Newsletter Leads</h3>
+                  <p className="ad-card-subtitle">
+                    {filteredLeads.length} shown · {newLeadsCount} new · {leads.length} total
+                  </p>
+                </div>
+                <div className="ad-filters cols-2">
+                  <input
+                    type="search"
+                    value={leadSearch}
+                    onChange={(e) => setLeadSearch(e.target.value)}
+                    placeholder="Search email or source..."
+                    className="ad-input"
+                  />
+                  <select
+                    value={leadStatusFilter}
+                    onChange={(e) => setLeadStatusFilter(e.target.value as typeof leadStatusFilter)}
+                    className="ad-select"
+                  >
+                    <option value="all">All status</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-slate-50">
+              <div className="ad-table-wrap">
+                <table className="ad-table">
+                  <thead>
                     <tr>
                       {['Email', 'Source', 'Status', 'Date', 'Actions'].map((h) => (
-                        <th key={h} className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
-                          {h}
-                        </th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody>
                     {filteredLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                        <td colSpan={5} className="ad-empty">
                           No newsletter leads yet.
                         </td>
                       </tr>
@@ -1161,7 +1151,7 @@ export default function AdminDashboard() {
                             <select
                               value={lead.status}
                               onChange={(e) => updateLeadStatus(lead._id, e.target.value as NewsletterLeadItem['status'])}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                              className="ad-select"
                             >
                               <option value="new">New</option>
                               <option value="contacted">Contacted</option>
@@ -1174,7 +1164,7 @@ export default function AdminDashboard() {
                             <button
                               type="button"
                               onClick={() => deleteLead(lead._id)}
-                              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
+                              className="ad-btn ad-btn-danger"
                             >
                               Delete
                             </button>
@@ -1190,61 +1180,57 @@ export default function AdminDashboard() {
 
           {/* Free Trial */}
           {activeTab === 'trials' && (
-            <section className={`${cardClass} overflow-hidden`}>
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Free Trial Enrollment</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {filteredTrialLeads.length} shown · {newTrialCount} new · {trialLeads.length} total
-                    </p>
-                  </div>
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
-                    <input
-                      type="search"
-                      value={trialSearch}
-                      onChange={(e) => setTrialSearch(e.target.value)}
-                      placeholder="Search name, phone, course..."
-                      className={inputClass}
-                    />
-                    <select
-                      value={trialStatusFilter}
-                      onChange={(e) => setTrialStatusFilter(e.target.value as typeof trialStatusFilter)}
-                      className={inputClass}
-                    >
-                      <option value="all">All status</option>
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="scheduled">Scheduled</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                    <select
-                      value={trialSort}
-                      onChange={(e) => setTrialSort(e.target.value as typeof trialSort)}
-                      className={inputClass}
-                    >
-                      <option value="newest">Newest first</option>
-                      <option value="oldest">Oldest first</option>
-                    </select>
-                  </div>
+            <section className="ad-card">
+              <div className="ad-card-header">
+                <div>
+                  <h3 className="ad-card-title">Free Trial Enrollment</h3>
+                  <p className="ad-card-subtitle">
+                    {filteredTrialLeads.length} shown · {newTrialCount} new · {trialLeads.length} total
+                  </p>
+                </div>
+                <div className="ad-filters cols-3">
+                  <input
+                    type="search"
+                    value={trialSearch}
+                    onChange={(e) => setTrialSearch(e.target.value)}
+                    placeholder="Search name, phone, course..."
+                    className="ad-input"
+                  />
+                  <select
+                    value={trialStatusFilter}
+                    onChange={(e) => setTrialStatusFilter(e.target.value as typeof trialStatusFilter)}
+                    className="ad-select"
+                  >
+                    <option value="all">All status</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                  <select
+                    value={trialSort}
+                    onChange={(e) => setTrialSort(e.target.value as typeof trialSort)}
+                    className="ad-select"
+                  >
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-slate-50">
+              <div className="ad-table-wrap">
+                <table className="ad-table">
+                  <thead>
                     <tr>
                       {['Name', 'Phone', 'Country', 'Course', 'Source', 'Status', 'Date', 'Actions'].map((h) => (
-                        <th key={h} className="px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400 sm:px-5">
-                          {h}
-                        </th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody>
                     {filteredTrialLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                        <td colSpan={8} className="ad-empty">
                           No free trial leads yet.
                         </td>
                       </tr>
@@ -1266,7 +1252,7 @@ export default function AdminDashboard() {
                             <select
                               value={lead.status}
                               onChange={(e) => updateTrialStatus(lead._id, e.target.value as TrialLeadItem['status'])}
-                              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                              className="ad-select"
                             >
                               <option value="new">New</option>
                               <option value="contacted">Contacted</option>
@@ -1285,14 +1271,14 @@ export default function AdminDashboard() {
                                 )}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="rounded-lg bg-[#12433f] px-3 py-2 text-sm font-medium text-white"
+                                className="ad-btn ad-btn-primary"
                               >
                                 WhatsApp
                               </a>
                               <button
                                 type="button"
                                 onClick={() => deleteTrialLead(lead._id)}
-                                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
+                                className="ad-btn ad-btn-danger"
                               >
                                 Delete
                               </button>
@@ -1309,49 +1295,45 @@ export default function AdminDashboard() {
 
           {/* Users */}
           {activeTab === 'users' && (
-            <section className={`${cardClass} overflow-hidden`}>
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800">Users</h3>
-                    <p className="mt-1 text-sm text-slate-500">{filteredUsers.length} users</p>
-                  </div>
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 lg:w-auto lg:min-w-[34rem]">
-                    <input
-                      type="search"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Search name or email..."
-                      className={inputClass}
-                    />
-                    <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={inputClass}>
-                      <option value="all">All roles</option>
-                      <option value="student">Student</option>
-                      <option value="teacher">Teacher</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={inputClass}>
-                      <option value="name">Sort by name</option>
-                      <option value="email">Sort by email</option>
-                      <option value="role">Sort by role</option>
-                      <option value="created">Newest first</option>
-                    </select>
-                  </div>
+            <section className="ad-card">
+              <div className="ad-card-header">
+                <div>
+                  <h3 className="ad-card-title">Users</h3>
+                  <p className="ad-card-subtitle">{filteredUsers.length} users</p>
+                </div>
+                <div className="ad-filters cols-3">
+                  <input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search name or email..."
+                    className="ad-input"
+                  />
+                  <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="ad-select">
+                    <option value="all">All roles</option>
+                    <option value="student">Student</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="ad-select">
+                    <option value="name">Sort by name</option>
+                    <option value="email">Sort by email</option>
+                    <option value="role">Sort by role</option>
+                    <option value="created">Newest first</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-slate-50">
+              <div className="ad-table-wrap">
+                <table className="ad-table">
+                  <thead>
                     <tr>
                       {['User', 'Role', 'Status', 'Enrollments', 'Joined', 'Actions'].map((h) => (
-                        <th key={h} className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
-                          {h}
-                        </th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody>
                     {paginatedUsers.map((user) => (
                       <tr key={user._id}>
                         <td className="px-5 py-4">
@@ -1374,7 +1356,7 @@ export default function AdminDashboard() {
                           <select
                             value={user.role}
                             onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                            className="ad-select"
                           >
                             <option value="student">Student</option>
                             <option value="teacher">Teacher</option>
@@ -1402,7 +1384,7 @@ export default function AdminDashboard() {
                           <button
                             type="button"
                             onClick={() => setSelectedUser(user)}
-                            className="rounded-lg bg-[#12433f] px-3 py-2 text-sm font-medium text-white"
+                            className="ad-btn ad-btn-primary"
                           >
                             Details
                           </button>
@@ -1414,8 +1396,8 @@ export default function AdminDashboard() {
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4">
-                  <p className="text-sm text-slate-400">
+                <div className="ad-pagination">
+                  <p className="text-sm text-[var(--ad-muted)]">
                     Page {currentPage} of {totalPages}
                   </p>
                   <div className="flex gap-2">
@@ -1423,7 +1405,7 @@ export default function AdminDashboard() {
                       type="button"
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40"
+                      className="ad-btn ad-btn-ghost disabled:opacity-40"
                     >
                       Prev
                     </button>
@@ -1431,7 +1413,7 @@ export default function AdminDashboard() {
                       type="button"
                       disabled={currentPage === totalPages}
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm disabled:opacity-40"
+                      className="ad-btn ad-btn-ghost disabled:opacity-40"
                     >
                       Next
                     </button>
@@ -1443,14 +1425,16 @@ export default function AdminDashboard() {
 
           {/* Enrollments */}
           {activeTab === 'enrollments' && (
-            <section className={`${cardClass} overflow-hidden`}>
-              <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-                <h3 className="text-xl font-bold text-slate-800">Enroll Courses</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  {courseEnrollments.length} total · {newEnrollmentCount} new · form submissions
-                </p>
+            <section className="ad-card">
+              <div className="ad-card-header">
+                <div>
+                  <h3 className="ad-card-title">Enroll Courses</h3>
+                  <p className="ad-card-subtitle">
+                    {courseEnrollments.length} total · {newEnrollmentCount} new · form submissions
+                  </p>
+                </div>
               </div>
-              <div className="space-y-5 p-5 sm:p-6">
+              <div className="ad-stack ad-card-body">
                 {(() => {
                   const map: Record<
                     string,
@@ -1467,22 +1451,22 @@ export default function AdminDashboard() {
                     a.courseTitle.localeCompare(b.courseTitle)
                   );
                   if (list.length === 0) {
-                    return <div className="py-12 text-center text-slate-400">No enrollments yet.</div>;
+                    return <div className="ad-empty">No enrollments yet.</div>;
                   }
                   return list.map((course) => (
-                    <div key={course.courseId} className="overflow-hidden rounded-2xl border border-slate-200">
-                      <div className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-4 sm:px-5">
+                    <div key={course.courseId} className="overflow-hidden rounded-[16px] border border-[var(--ad-border)]">
+                      <div className="flex items-center justify-between gap-4 bg-[#f8faf9] px-4 py-4">
                         <div>
-                          <h4 className="font-semibold text-slate-800">{course.courseTitle}</h4>
-                          <p className="mt-0.5 text-xs text-slate-400">Course ID: {course.courseId}</p>
+                          <h4 className="font-semibold text-[var(--ad-text)]">{course.courseTitle}</h4>
+                          <p className="mt-1 text-xs text-[var(--ad-muted)]">Course ID: {course.courseId}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-[#12433f]">{course.students.length}</p>
-                          <p className="text-xs text-slate-400">enrolled</p>
+                          <p className="text-xl font-bold text-[var(--ad-brand)]">{course.students.length}</p>
+                          <p className="text-xs text-[var(--ad-muted)]">enrolled</p>
                         </div>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full">
+                      <div className="ad-table-wrap">
+                        <table className="ad-table">
                           <thead>
                             <tr>
                               {[
@@ -1497,12 +1481,7 @@ export default function AdminDashboard() {
                                 'Date',
                                 'Actions',
                               ].map((h) => (
-                                <th
-                                  key={h}
-                                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
-                                >
-                                  {h}
-                                </th>
+                                <th key={h}>{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -1552,7 +1531,7 @@ export default function AdminDashboard() {
                                         e.target.value as CourseEnrollmentItem['status']
                                       )
                                     }
-                                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                                    className="ad-select"
                                   >
                                     <option value="new">New</option>
                                     <option value="contacted">Contacted</option>
@@ -1570,7 +1549,7 @@ export default function AdminDashboard() {
                                   <button
                                     type="button"
                                     onClick={() => deleteEnrollment(s._id)}
-                                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600"
+                                    className="ad-btn ad-btn-danger"
                                   >
                                     Delete
                                   </button>
@@ -1592,23 +1571,23 @@ export default function AdminDashboard() {
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setSelectedUser(null)}>
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[1.35rem] border border-slate-200 bg-white shadow-2xl"
+            className="ad-card max-h-[90vh] w-full max-w-2xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+            <div className="flex items-center justify-between gap-4 border-b border-[var(--ad-border)] px-6 py-4">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">User Details</h3>
-                <p className="mt-0.5 text-sm text-slate-400">{selectedUser.email}</p>
+                <h3 className="ad-card-title">User Details</h3>
+                <p className="ad-card-subtitle">{selectedUser.email}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
+                className="ad-btn ad-btn-ghost"
               >
                 Close
               </button>
             </div>
-            <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
+            <div className="ad-grid-2 p-6">
               {[
                 ['Full Name', selectedUser.name],
                 ['Email', selectedUser.email],
@@ -1626,27 +1605,27 @@ export default function AdminDashboard() {
                 ['Last Login', selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : '—'],
                 ['User ID', selectedUser._id],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-400">{label}</p>
-                  <p className="break-words text-sm font-medium text-slate-800">{value}</p>
+                <div key={label} className="ad-soft-box">
+                  <p className="ad-kpi-label mb-2">{label}</p>
+                  <p className="break-words text-sm font-medium text-[var(--ad-text)]">{value}</p>
                 </div>
               ))}
             </div>
 
             {(selectedUser.enrollments?.length || 0) > 0 && (
               <div className="px-6 pb-6">
-                <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Enrollment Details</h4>
-                <div className="space-y-3">
+                <h4 className="ad-kpi-label mb-3">Enrollment Details</h4>
+                <div className="ad-stack">
                   {selectedUser.enrollments?.map((e) => (
-                    <div key={`${e.courseId}-${e.enrolledAt}`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="font-semibold text-[#12433f]">{e.courseTitle}</p>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-slate-600 sm:grid-cols-4">
+                    <div key={`${e.courseId}-${e.enrolledAt}`} className="ad-soft-box">
+                      <p className="font-semibold text-[var(--ad-brand)]">{e.courseTitle}</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-[var(--ad-muted)] sm:grid-cols-4">
                         <p>Age: {e.age ?? '—'}</p>
                         <p>Education: {e.education || '—'}</p>
                         <p>Phone: {e.phone || selectedUser.phone || '—'}</p>
                         <p>Country: {e.country || '—'}</p>
                       </div>
-                      {e.notes && <p className="mt-2 text-sm text-slate-500">Notes: {e.notes}</p>}
+                      {e.notes && <p className="mt-2 text-sm text-[var(--ad-muted)]">Notes: {e.notes}</p>}
                     </div>
                   ))}
                 </div>
